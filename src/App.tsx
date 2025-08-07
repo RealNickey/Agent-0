@@ -15,7 +15,6 @@
  */
 
 import { useRef, useState } from "react";
-import "./App.scss";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
 import { Altair } from "./components/altair/Altair";

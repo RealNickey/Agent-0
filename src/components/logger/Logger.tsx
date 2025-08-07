@@ -14,13 +14,11 @@
  * limitations under the License.
  */
 
-import "./logger.scss";
-
 import cn from "classnames";
 import { memo, ReactNode } from "react";
 import { useLoggerStore } from "../../lib/store-logger";
 import SyntaxHighlighter from "react-syntax-highlighter";
-import { vs2015 as dark } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { vs2015 as dark } from "react-syntax-highlighter/dist/cjs/styles/hljs";
 import {
   ClientContentLog as ClientContentLogType,
   StreamingLog,
@@ -67,6 +65,7 @@ const LogEntry = memo(
     </li>
   )
 );
+LogEntry.displayName = 'LogEntry';
 
 const PlainTextMessage = ({
   message,
@@ -125,6 +124,7 @@ const RenderPart = memo(({ part }: { part: Part }) => {
   }
   return <div className="part part-unknown">&nbsp;</div>;
 });
+RenderPart.displayName = 'RenderPart';
 
 const ClientContentLog = memo(({ message }: Message) => {
   const { turns, turnComplete } = message as ClientContentLogType;
@@ -141,6 +141,7 @@ const ClientContentLog = memo(({ message }: Message) => {
     </div>
   );
 });
+ClientContentLog.displayName = 'ClientContentLog';
 
 const ToolCallLog = memo(({ message }: Message) => {
   const { toolCall } = message as { toolCall: LiveServerToolCall };
@@ -157,6 +158,7 @@ const ToolCallLog = memo(({ message }: Message) => {
     </div>
   );
 });
+ToolCallLog.displayName = 'ToolCallLog';
 
 const ToolCallCancellationLog = ({ message }: Message): JSX.Element => (
   <div className={cn("rich-log tool-call-cancellation")}>
@@ -167,7 +169,7 @@ const ToolCallCancellationLog = ({ message }: Message): JSX.Element => (
         message as { toolCallCancellation: LiveServerToolCallCancellation }
       ).toolCallCancellation.ids?.map((id) => (
         <span className="inline-code" key={`cancel-${id}`}>
-          "{id}"
+          &quot;{id}&quot;
         </span>
       ))}
     </span>
@@ -188,6 +190,7 @@ const ToolResponseLog = memo(
     </div>
   )
 );
+ToolResponseLog.displayName = 'ToolResponseLog';
 
 const ModelTurnLog = ({ message }: Message): JSX.Element => {
   const serverContent = (message as { serverContent: LiveServerContent })
@@ -207,8 +210,11 @@ const ModelTurnLog = ({ message }: Message): JSX.Element => {
   );
 };
 
-const CustomPlainTextLog = (msg: string) => () =>
-  <PlainTextMessage message={msg} />;
+const CustomPlainTextLog = (msg: string) => {
+  const ComponentWithDisplayName = () => <PlainTextMessage message={msg} />;
+  ComponentWithDisplayName.displayName = 'CustomPlainTextLog';
+  return ComponentWithDisplayName;
+};
 
 export type LoggerFilterType = "conversations" | "tools" | "none";
 

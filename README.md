@@ -1,6 +1,6 @@
 # Live API - Web Console
 
-This repository contains a react-based starter app for using the [Live API](<[https://ai.google.dev/gemini-api](https://ai.google.dev/api/multimodal-live)>) over a websocket. It provides modules for streaming audio playback, recording user media such as from a microphone, webcam or screen capture as well as a unified log view to aid in development of your application.
+This repository contains a Next.js-based starter app for using the [Live API](<[https://ai.google.dev/gemini-api](https://ai.google.dev/api/multimodal-live)>) over a websocket. It provides modules for streaming audio playback, recording user media such as from a microphone, webcam or screen capture as well as a unified log view to aid in development of your application.
 
 [![Live API Demo](readme/thumbnail.png)](https://www.youtube.com/watch?v=J_q7JY1XxFE)
 
@@ -11,7 +11,7 @@ Watch the demo of the Live API [here](https://www.youtube.com/watch?v=J_q7JY1XxF
 To get started, [create a free Gemini API key](https://aistudio.google.com/apikey) and add it to the `.env` file. Then:
 
 ```
-$ npm install && npm start
+$ npm install && npm run dev
 ```
 
 We have provided several example applications on other branches of this repository:
@@ -94,7 +94,7 @@ export function Altair() {
 
 ## development
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+This project was migrated from Create React App to Next.js.
 Project consists of:
 
 - an Event-emitting websocket-client to ease communication between the websocket and the front-end
@@ -105,7 +105,7 @@ Project consists of:
 
 In the project directory, you can run:
 
-### `npm start`
+### `npm run dev`
 
 Runs the app in the development mode.\
 Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
@@ -115,12 +115,18 @@ You will also see any lint errors in the console.
 
 ### `npm run build`
 
-Builds the app for production to the `build` folder.\
+Builds the app for production to the `.next` folder.\
 It correctly bundles React in production mode and optimizes the build for the best performance.
 
 The build is minified and the filenames include the hashes.\
 Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### `npm start`
+
+Starts the production server after running `npm run build`.
+
+### `npm run dev-https`
+
+Runs the development server with HTTPS enabled using Next.js experimental HTTPS support.
 
 _This is an experiment showcasing the Live API, not an official Google product. We’ll do our best to support and maintain this experiment but your mileage may vary. We encourage open sourcing projects as a way of learning from each other. Please respect our and other creators' rights, including copyright and trademark rights when present, when sharing these works and creating derivative work. If you want more info on Google's policy, you can find that [here](https://developers.google.com/terms/site-policies)._

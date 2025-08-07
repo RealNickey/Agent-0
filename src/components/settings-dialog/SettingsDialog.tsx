@@ -5,7 +5,6 @@ import {
   useMemo,
   useState,
 } from "react";
-import "./settings-dialog.scss";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import VoiceSelector from "./VoiceSelector";
 import ResponseModalitySelector from "./ResponseModalitySelector";

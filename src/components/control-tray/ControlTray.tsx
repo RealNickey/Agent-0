@@ -23,7 +23,6 @@ import { useScreenCapture } from "../../hooks/use-screen-capture";
 import { useWebcam } from "../../hooks/use-webcam";
 import { AudioRecorder } from "../../lib/audio-recorder";
 import AudioPulse from "../audio-pulse/AudioPulse";
-import "./control-tray.scss";
 import SettingsDialog from "../settings-dialog/SettingsDialog";
 
 export type ControlTrayProps = {
@@ -57,6 +56,7 @@ const MediaStreamButton = memo(
       </button>
     )
 );
+MediaStreamButton.displayName = 'MediaStreamButton';
 
 function ControlTray({
   videoRef,

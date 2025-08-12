@@ -26,7 +26,8 @@ import AudioPulse from "../audio-pulse/AudioPulse";
 import SettingsDialog from "../settings-dialog/SettingsDialog";
 
 export type ControlTrayProps = {
-  videoRef: RefObject<HTMLVideoElement>;
+  // Accept a ref whose current can initially be null (common when using useRef<HTMLVideoElement>(null))
+  videoRef: RefObject<HTMLVideoElement | null>;
   children?: ReactNode;
   supportsVideo: boolean;
   onVideoStreamChange?: (stream: MediaStream | null) => void;
@@ -127,7 +128,7 @@ function ControlTray({
       const ctx = canvas.getContext("2d")!;
       canvas.width = video.videoWidth * 0.25;
       canvas.height = video.videoHeight * 0.25;
-      if (canvas.width + canvas.height > 0) {
+      if (canvas.width + canvas.height > 0 && videoRef.current) {
         ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
         const base64 = canvas.toDataURL("image/jpeg", 1.0);
         const data = base64.slice(base64.indexOf(",") + 1, Infinity);

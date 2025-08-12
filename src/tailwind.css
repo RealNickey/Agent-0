@@ -1,0 +1,10 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Bridge some existing global CSS variable driven styles */
+body {
+  font-family: "Space Mono", monospace;
+  background-color: var(--Neutral-30);
+  color: white;
+}

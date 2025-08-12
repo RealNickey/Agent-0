@@ -16,6 +16,7 @@
 
 import cn from "classnames";
 import { memo, ReactNode } from "react";
+import type { ReactElement } from "react";
 import { useLoggerStore } from "../../lib/store-logger";
 import SyntaxHighlighter from "react-syntax-highlighter";
 import { vs2015 as dark } from "react-syntax-highlighter/dist/cjs/styles/hljs";
@@ -45,7 +46,7 @@ const LogEntry = memo(
     }: {
       message: StreamingLog["message"];
     }) => ReactNode;
-  }): JSX.Element => (
+  }): ReactElement => (
     <li
       className={cn(
         `plain-log`,
@@ -160,7 +161,7 @@ const ToolCallLog = memo(({ message }: Message) => {
 });
 ToolCallLog.displayName = 'ToolCallLog';
 
-const ToolCallCancellationLog = ({ message }: Message): JSX.Element => (
+const ToolCallCancellationLog = ({ message }: Message): ReactElement => (
   <div className={cn("rich-log tool-call-cancellation")}>
     <span>
       {" "}
@@ -177,7 +178,7 @@ const ToolCallCancellationLog = ({ message }: Message): JSX.Element => (
 );
 
 const ToolResponseLog = memo(
-  ({ message }: Message): JSX.Element => (
+  ({ message }: Message): ReactElement => (
     <div className={cn("rich-log tool-response")}>
       {(message as LiveClientToolResponse).functionResponses?.map((fc) => (
         <div key={`tool-response-${fc.id}`} className="part">
@@ -192,7 +193,7 @@ const ToolResponseLog = memo(
 );
 ToolResponseLog.displayName = 'ToolResponseLog';
 
-const ModelTurnLog = ({ message }: Message): JSX.Element => {
+const ModelTurnLog = ({ message }: Message): ReactElement => {
   const serverContent = (message as { serverContent: LiveServerContent })
     .serverContent;
   const { modelTurn } = serverContent as { modelTurn: Content };

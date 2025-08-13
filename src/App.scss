@@ -229,20 +229,45 @@ body {
 }
 
 .streaming-console {
-  background: var(--Neutral-15);
-  color: var(--gray-300);
+  background: linear-gradient(135deg, var(--neutral-900) 0%, var(--neutral-800) 100%);
+  color: var(--neutral-200);
   display: flex;
   height: 100vh;
   width: 100vw;
+  overflow: hidden;
+  position: relative;
+
+  /* Add subtle background pattern */
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: 
+      radial-gradient(circle at 25% 25%, var(--primary-500)10 0%, transparent 50%),
+      radial-gradient(circle at 75% 75%, var(--accent-500)05 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
 
   a,
   a:visited,
   a:active {
-    color: var(--gray-300);
+    color: var(--primary-400);
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: var(--primary-300);
+    }
   }
 
   .disabled {
     pointer-events: none;
+    opacity: 0.6;
+    filter: grayscale(0.3);
+    transition: all 0.3s ease;
 
     > * {
       pointer-events: none;
@@ -256,9 +281,13 @@ body {
     align-items: center;
     justify-content: center;
     flex-grow: 1;
-    gap: 1rem;
+    gap: 2rem;
     max-width: 100%;
     overflow: hidden;
+    z-index: 1;
+    background: rgba(255, 255, 255, 0.02);
+    backdrop-filter: blur(10px);
+    border-left: 1px solid var(--neutral-700);
   }
 
   .main-app-area {
@@ -266,6 +295,47 @@ body {
     flex: 1;
     align-items: center;
     justify-content: center;
+    width: 100%;
+    padding: 2rem;
+    position: relative;
+
+    /* Add subtle glow effect */
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, var(--primary-500)15 0%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.3;
+      z-index: -1;
+    }
+
+    /* Vega embed styling */
+    .vega-embed {
+      background: var(--neutral-800);
+      border: 1px solid var(--neutral-700);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(20px);
+      transition: all 0.3s ease;
+
+      &:hover {
+        border-color: var(--primary-600);
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+        transform: translateY(-2px);
+      }
+
+      /* Style vega charts for dark theme */
+      canvas, svg {
+        border-radius: 8px;
+      }
+    }
   }
 
   .function-call {
@@ -274,6 +344,30 @@ body {
     width: 100%;
     height: 50%;
     overflow-y: auto;
+    background: var(--neutral-800);
+    border: 1px solid var(--neutral-700);
+    border-radius: 12px;
+    padding: 1rem;
+    margin: 1rem;
+    backdrop-filter: blur(20px);
+    
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: var(--neutral-700);
+      border-radius: 3px;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: var(--neutral-600);
+      border-radius: 3px;
+      
+      &:hover {
+        background: var(--neutral-500);
+      }
+    }
   }
 }
 

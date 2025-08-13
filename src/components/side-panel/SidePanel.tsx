@@ -16,17 +16,51 @@
 
 import cn from "classnames";
 import { useEffect, useRef, useState } from "react";
-import { RiSidebarFoldLine, RiSidebarUnfoldLine } from "react-icons/ri";
+import { RiSidebarFoldLine, RiSidebarUnfoldLine, RiSendPlane2Fill } from "react-icons/ri";
 import Select from "react-select";
+import { motion, AnimatePresence } from "framer-motion";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
 import Logger, { LoggerFilterType } from "../logger/Logger";
+import { Button } from "../ui/button";
 
 const filterOptions = [
   { value: "conversations", label: "Conversations" },
   { value: "tools", label: "Tool Use" },
   { value: "none", label: "All" },
 ];
+
+// Animation variants
+const sidebarVariants = {
+  open: {
+    width: "400px",
+    opacity: 1,
+  },
+  closed: {
+    width: "60px",
+    opacity: 0.9,
+  },
+};
+
+const contentVariants = {
+  open: {
+    opacity: 1,
+    x: 0,
+  },
+  closed: {
+    opacity: 0,
+    x: -20,
+  },
+};
+
+const buttonVariants = {
+  hover: {
+    scale: 1.05,
+  },
+  tap: {
+    scale: 0.95,
+  },
+};
 
 export default function SidePanel() {
   const { connected, client } = useLiveAPIContext();
@@ -72,89 +106,180 @@ export default function SidePanel() {
   };
 
   return (
-    <div className={`side-panel ${open ? "open" : ""}`}>
-      <header className="top">
-        <h2>Console</h2>
-        {open ? (
-          <button className="opener" onClick={() => setOpen(false)}>
-            <RiSidebarFoldLine color="#b4b8bb" />
-          </button>
-        ) : (
-          <button className="opener" onClick={() => setOpen(true)}>
-            <RiSidebarUnfoldLine color="#b4b8bb" />
-          </button>
+    <motion.div 
+      className={cn("side-panel", { open })}
+      variants={sidebarVariants}
+      animate={open ? "open" : "closed"}
+      initial="open"
+      transition={{
+        duration: 0.3,
+        ease: "easeInOut",
+      }}
+    >
+      <motion.header className="top modern-panel-header">
+        <AnimatePresence mode="wait">
+          {open && (
+            <motion.h2
+              variants={contentVariants}
+              initial="closed"
+              animate="open"
+              exit="closed"
+              className="inter-semibold text-lg text-white"
+            >
+              Console
+            </motion.h2>
+          )}
+        </AnimatePresence>
+        
+        <motion.div
+          variants={buttonVariants}
+          whileHover="hover"
+          whileTap="tap"
+        >
+          <Button
+            variant="ghost"
+            size="icon"
+            className="opener modern-toggle-button"
+            onClick={() => setOpen(!open)}
+          >
+            {open ? (
+              <RiSidebarFoldLine className="w-5 h-5 text-neutral-400" />
+            ) : (
+              <RiSidebarUnfoldLine className="w-5 h-5 text-neutral-400" />
+            )}
+          </Button>
+        </motion.div>
+      </motion.header>
+
+      <AnimatePresence>
+        {open && (
+          <motion.section 
+            className="indicators modern-indicators"
+            variants={contentVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
+          >
+            <div className="modern-select-wrapper">
+              <Select
+                className="react-select modern-select"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (baseStyles, state) => ({
+                    ...baseStyles,
+                    background: "var(--neutral-800)",
+                    borderColor: state.isFocused ? "var(--primary-500)" : "var(--neutral-700)",
+                    color: "white",
+                    minHeight: "36px",
+                    borderRadius: "8px",
+                    border: `1px solid ${state.isFocused ? "var(--primary-500)" : "var(--neutral-700)"}`,
+                    boxShadow: state.isFocused ? "0 0 0 2px var(--primary-500)25" : "none",
+                    transition: "all 0.2s ease",
+                    "&:hover": {
+                      borderColor: "var(--primary-500)",
+                    },
+                  }),
+                  option: (styles, { isFocused, isSelected }) => ({
+                    ...styles,
+                    backgroundColor: isSelected
+                      ? "var(--primary-500)"
+                      : isFocused
+                      ? "var(--neutral-700)"
+                      : "var(--neutral-800)",
+                    color: "white",
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                  }),
+                  menu: (styles) => ({
+                    ...styles,
+                    backgroundColor: "var(--neutral-800)",
+                    border: "1px solid var(--neutral-700)",
+                    borderRadius: "8px",
+                    overflow: "hidden",
+                  }),
+                  singleValue: (styles) => ({
+                    ...styles,
+                    color: "white",
+                  }),
+                }}
+                defaultValue={selectedOption}
+                options={filterOptions}
+                onChange={(e) => {
+                  setSelectedOption(e);
+                }}
+              />
+            </div>
+            
+            <motion.div 
+              className={cn("streaming-indicator modern-status", { connected })}
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className={cn("status-dot", { connected })} />
+              <span className="status-text inter-medium">
+                {connected ? "Streaming" : "Paused"}
+              </span>
+            </motion.div>
+          </motion.section>
         )}
-      </header>
-      <section className="indicators">
-        <Select
-          className="react-select"
-          classNamePrefix="react-select"
-          styles={{
-            control: (baseStyles) => ({
-              ...baseStyles,
-              background: "var(--Neutral-15)",
-              color: "var(--Neutral-90)",
-              minHeight: "33px",
-              maxHeight: "33px",
-              border: 0,
-            }),
-            option: (styles, { isFocused, isSelected }) => ({
-              ...styles,
-              backgroundColor: isFocused
-                ? "var(--Neutral-30)"
-                : isSelected
-                ? "var(--Neutral-20)"
-                : undefined,
-            }),
-          }}
-          defaultValue={selectedOption}
-          options={filterOptions}
-          onChange={(e) => {
-            setSelectedOption(e);
-          }}
-        />
-        <div className={cn("streaming-indicator", { connected })}>
-          {connected
-            ? `🔵${open ? " Streaming" : ""}`
-            : `⏸️${open ? " Paused" : ""}`}
-        </div>
-      </section>
-      <div className="side-panel-container" ref={loggerRef}>
+      </AnimatePresence>
+
+      <motion.div 
+        className="side-panel-container modern-logger-container" 
+        ref={loggerRef}
+        variants={contentVariants}
+        animate={open ? "open" : "closed"}
+      >
         <Logger
           filter={(selectedOption?.value as LoggerFilterType) || "none"}
         />
-      </div>
-      <div className={cn("input-container", { disabled: !connected })}>
-        <div className="input-content">
-          <textarea
-            className="input-area"
-            ref={inputRef}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                e.stopPropagation();
-                handleSubmit();
-              }
-            }}
-            onChange={(e) => setTextInput(e.target.value)}
-            value={textInput}
-          ></textarea>
-          <span
-            className={cn("input-content-placeholder", {
-              hidden: textInput.length,
-            })}
-          >
-            Type&nbsp;something...
-          </span>
+      </motion.div>
 
-          <button
-            className="send-button material-symbols-outlined filled"
-            onClick={handleSubmit}
+      <AnimatePresence>
+        {open && (
+          <motion.div 
+            className={cn("input-container modern-input-container", { disabled: !connected })}
+            variants={contentVariants}
+            initial="closed"
+            animate="open"
+            exit="closed"
           >
-            send
-          </button>
-        </div>
-      </div>
-    </div>
+            <div className="input-content modern-input-content">
+              <textarea
+                className="input-area modern-textarea"
+                ref={inputRef}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleSubmit();
+                  }
+                }}
+                onChange={(e) => setTextInput(e.target.value)}
+                value={textInput}
+                placeholder="Type something..."
+                disabled={!connected}
+              />
+
+              <motion.div
+                variants={buttonVariants}
+                whileHover="hover"
+                whileTap="tap"
+              >
+                <Button
+                  variant="default"
+                  size="icon"
+                  className="send-button modern-send-button"
+                  onClick={handleSubmit}
+                  disabled={!connected || !textInput.trim()}
+                >
+                  <RiSendPlane2Fill className="w-4 h-4" />
+                </Button>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   );
 }

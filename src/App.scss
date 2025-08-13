@@ -1,4 +1,73 @@
 :root {
+  /* Modern color scheme with specified colors */
+  --primary-50: #f0f4ff;
+  --primary-100: #e1eaff;
+  --primary-200: #c3d4ff;
+  --primary-300: #a5beff;
+  --primary-400: #87a8ff;
+  --primary-500: #6D8EC5; /* Main primary color */
+  --primary-600: #5a7aa8;
+  --primary-700: #47668b;
+  --primary-800: #34526e;
+  --primary-900: #213e51;
+
+  --secondary-50: #fef4ed;
+  --secondary-100: #fde8d5;
+  --secondary-200: #fbd1aa;
+  --secondary-300: #f9ba7f;
+  --secondary-400: #f7a354;
+  --secondary-500: #D3622C; /* Main secondary color */
+  --secondary-600: #b85524;
+  --secondary-700: #9d481c;
+  --secondary-800: #823b14;
+  --secondary-900: #672e0c;
+
+  --accent-50: #fefbec;
+  --accent-100: #fef7d3;
+  --accent-200: #fdefaa;
+  --accent-300: #fce781;
+  --accent-400: #fbdf58;
+  --accent-500: #F0C845; /* Main accent color */
+  --accent-600: #d4ad3a;
+  --accent-700: #b8922f;
+  --accent-800: #9c7724;
+  --accent-900: #805c19;
+
+  --neutral-50: #f8fafc;
+  --neutral-100: #f1f5f9;
+  --neutral-200: #e2e8f0;
+  --neutral-300: #cbd5e1;
+  --neutral-400: #94a3b8;
+  --neutral-500: #64748b;
+  --neutral-600: #475569;
+  --neutral-700: #334155;
+  --neutral-800: #1e293b;
+  --neutral-900: #212842; /* Main dark color */
+  --neutral-950: #0f172a;
+
+  /* Shadcn/ui design tokens */
+  --background: 222 30% 7%; /* neutral-900 in HSL */
+  --foreground: 210 40% 98%;
+  --card: 222 28% 9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 28% 9%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 217 46% 60%; /* primary-500 in HSL */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 14 67% 48%; /* secondary-500 in HSL */
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 19% 27%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 45 81% 67%; /* accent-500 in HSL */
+  --accent-foreground: 222 30% 7%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 19% 27%;
+  --input: 217 19% 27%;
+  --ring: 217 46% 60%;
+  --radius: 0.75rem;
+
+  /* Legacy variables for backward compatibility */
   --text: white;
   --gray-200: #b4b8bb;
   --gray-300: #80868b;
@@ -9,26 +78,26 @@
   --gray-900: #111111;
   --gray-1000: #0a0a0a;
   --border-stroke: #444444;
-  --accent-blue: rgb(161, 228, 242);
-  --accent-blue-active-bg: #001233;
-  --accent-blue-active: #98beff;
-  --accent-blue-headers: #448dff;
-  --accent-green: rgb(168, 218, 181);
+  --accent-blue: var(--primary-500);
+  --accent-blue-active-bg: var(--primary-900);
+  --accent-blue-active: var(--primary-400);
+  --accent-blue-headers: var(--primary-500);
+  --accent-green: #168d4c;
 
-  --midnight-blue: rgb(0, 18, 51);
-  --blue-30: #99beff;
+  --midnight-blue: var(--primary-900);
+  --blue-30: var(--primary-400);
 
-  --accent-red: #ff4600;
+  --accent-red: var(--secondary-500);
 
-  --background: var(--gray-900);
-  --color: var(--text);
-
+  /* Scrollbar styling */
   scrollbar-color: var(--gray-600) var(--gray-900);
   scrollbar-width: thin;
 
-  --font-family: "Space Mono", monospace;
+  /* Updated font family */
+  --font-family: "Inter", system-ui, sans-serif;
+  --font-family-mono: "JetBrains Mono", "Space Mono", monospace;
 
-  /* */
+  /* Legacy neutral colors for gradual migration */
   --Neutral-00: #000;
   --Neutral-5: #181a1b;
   --Neutral-10: #1c1f21;
@@ -54,8 +123,13 @@
 }
 
 body {
-  font-family: "Space Mono", monospace;
-  background: var(--Neutral-30);
+  font-family: "Inter", system-ui, sans-serif;
+  background: var(--neutral-900);
+  color: white;
+  font-weight: 400;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .material-symbols-outlined {
@@ -68,6 +142,45 @@ body {
   }
 }
 
+/* Inter font classes */
+.inter-regular {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.inter-medium {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 500;
+  font-style: normal;
+}
+
+.inter-semibold {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  font-style: normal;
+}
+
+.inter-bold {
+  font-family: "Inter", system-ui, sans-serif;
+  font-weight: 700;
+  font-style: normal;
+}
+
+/* JetBrains Mono for code */
+.mono-regular {
+  font-family: "JetBrains Mono", "Space Mono", monospace;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.mono-medium {
+  font-family: "JetBrains Mono", "Space Mono", monospace;
+  font-weight: 500;
+  font-style: normal;
+}
+
+/* Legacy font classes for backward compatibility */
 .space-mono-regular {
   font-family: "Space Mono", monospace;
   font-weight: 400;

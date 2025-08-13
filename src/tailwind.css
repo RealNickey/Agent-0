@@ -4,7 +4,75 @@
 
 /* Bridge some existing global CSS variable driven styles */
 body {
-  font-family: "Space Mono", monospace;
-  background-color: var(--Neutral-30);
+  font-family: "Inter", system-ui, sans-serif;
+  background-color: var(--neutral-900);
   color: white;
+}
+
+/* Modern utility classes */
+@layer utilities {
+  .text-gradient {
+    background: linear-gradient(135deg, var(--primary-500) 0%, var(--accent-500) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .backdrop-blur-glass {
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  .glass-morphism {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .gradient-border {
+    background: linear-gradient(var(--neutral-900), var(--neutral-900)) padding-box,
+                linear-gradient(135deg, var(--primary-500), var(--accent-500)) border-box;
+    border: 1px solid transparent;
+  }
+}
+
+/* Component styles */
+@layer components {
+  .modern-button {
+    @apply px-6 py-3 rounded-lg font-medium transition-all duration-200 ease-in-out;
+    @apply transform hover:scale-105 active:scale-95;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-neutral-900;
+  }
+
+  .modern-button-primary {
+    @apply modern-button bg-primary-500 text-white hover:bg-primary-600;
+    @apply shadow-lg hover:shadow-xl hover:shadow-primary-500/25;
+  }
+
+  .modern-button-secondary {
+    @apply modern-button bg-secondary-500 text-white hover:bg-secondary-600;
+    @apply shadow-lg hover:shadow-xl hover:shadow-secondary-500/25;
+  }
+
+  .modern-button-ghost {
+    @apply modern-button bg-transparent text-neutral-300 hover:bg-neutral-800 hover:text-white;
+    @apply border border-neutral-700 hover:border-neutral-600;
+  }
+
+  .modern-input {
+    @apply w-full px-4 py-3 rounded-lg bg-neutral-800 border border-neutral-700;
+    @apply text-white placeholder-neutral-400 focus:border-primary-500 focus:outline-none;
+    @apply transition-colors duration-200;
+  }
+
+  .modern-card {
+    @apply bg-neutral-800 rounded-xl border border-neutral-700 p-6;
+    @apply shadow-lg hover:shadow-xl transition-shadow duration-200;
+  }
+
+  .modern-card-glass {
+    @apply glass-morphism rounded-xl p-6;
+    @apply shadow-lg hover:shadow-xl transition-all duration-200;
+  }
 }

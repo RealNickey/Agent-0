@@ -57,12 +57,13 @@ export class AudioRecorder extends EventEmitter {
 
       const workletName = "audio-recorder-worklet";
       const src = createWorketFromSrc(workletName, AudioRecordingWorklet);
-
-      await this.audioContext.audioWorklet.addModule(src);
-      this.recordingWorklet = new AudioWorkletNode(
-        this.audioContext,
-        workletName,
-      );
+      try {
+        await this.audioContext.audioWorklet.addModule(src);
+      } catch (e) {
+        console.error('Failed to load audio recorder worklet module', e);
+        throw e;
+      }
+      this.recordingWorklet = new AudioWorkletNode(this.audioContext, workletName);
 
       this.recordingWorklet.port.onmessage = async (ev: MessageEvent) => {
         // worklet processes recording floats and messages converted buffer
@@ -77,9 +78,13 @@ export class AudioRecorder extends EventEmitter {
 
       // vu meter worklet
       const vuWorkletName = "vu-meter";
-      await this.audioContext.audioWorklet.addModule(
-        createWorketFromSrc(vuWorkletName, VolMeterWorket),
-      );
+      try {
+        await this.audioContext.audioWorklet.addModule(
+          createWorketFromSrc(vuWorkletName, VolMeterWorket),
+        );
+      } catch (e) {
+        console.error('Failed to load VU meter worklet module', e);
+      }
       this.vuWorklet = new AudioWorkletNode(this.audioContext, vuWorkletName);
       this.vuWorklet.port.onmessage = (ev: MessageEvent) => {
         this.emit("volume", ev.data.volume);

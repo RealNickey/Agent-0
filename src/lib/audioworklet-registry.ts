@@ -32,12 +32,18 @@ export const createWorketFromSrc = (
   workletName: string,
   workletSrc: string,
 ) => {
-  const script = new Blob(
-    [`registerProcessor("${workletName}", ${workletSrc})`],
-    {
-      type: "application/javascript",
-    },
-  );
+  // Wrap provided worklet source (which should define a class) and register it explicitly.
+  // The previous implementation attempted to pass the class expression directly as the second
+  // argument to registerProcessor but that can fail if the source string contains a class declaration
+  // (statement) instead of an expression, leading to the processor not being registered.
+  // We now evaluate the code first, then locate a constructor to register.
+  const wrapper = `(() => {\n${workletSrc}\n` +
+    `const ctor = (typeof AudioProcessingWorklet !== 'undefined' && AudioProcessingWorklet)
+      || (typeof VolMeter !== 'undefined' && VolMeter);
+if (!ctor) { console.error('Worklet constructor not found for ${workletName}'); return; }
+try { registerProcessor('${workletName}', ctor); } catch(e){ console.error('Failed to register worklet ${workletName}', e); }
+})();`;
 
+  const script = new Blob([wrapper], { type: 'application/javascript' });
   return URL.createObjectURL(script);
 };

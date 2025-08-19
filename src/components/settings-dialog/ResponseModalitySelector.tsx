@@ -29,11 +29,13 @@ export default function ResponseModalitySelector() {
   );
 
   return (
-    <div className="select-group">
-      <label htmlFor="response-modality-selector">Response modality</label>
+    <div className="flex flex-col gap-1 h-[70px]">
+      <label htmlFor="response-modality-selector" className="text-[10px]">
+        Response modality
+      </label>
       <Select
         id="response-modality-selector"
-        className="react-select"
+        className="bg-neutral-20 text-neutral-90 w-[193px] h-[30px]"
         classNamePrefix="react-select"
         styles={{
           control: (baseStyles) => ({
@@ -51,6 +53,15 @@ export default function ResponseModalitySelector() {
               : isSelected
               ? "var(--Neutral-20)"
               : undefined,
+          }),
+          menu: (styles) => ({
+            ...styles,
+            background: "var(--Neutral-20)",
+            color: "var(--Neutral-90)",
+          }),
+          singleValue: (styles) => ({
+            ...styles,
+            color: "var(--Neutral-90)",
           }),
         }}
         defaultValue={selectedOption}

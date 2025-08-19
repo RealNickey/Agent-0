@@ -48,7 +48,16 @@ export default function AudioPulse({ active, volume, hover }: AudioPulseProps) {
   }, [volume]);
 
   return (
-    <div className={c("audioPulse", { active, hover })}>
+    <div
+      className={c(
+        "flex w-6 justify-evenly items-center transition-all duration-500 h-1 transition-opacity duration-[333ms]",
+        {
+          "opacity-100": active,
+          "[&>div]:bg-neutral-80": active,
+          "[&>div]:animate-hover": hover,
+        }
+      )}
+    >
       {Array(lineCount)
         .fill(null)
         .map((_, i) => (
@@ -57,6 +66,7 @@ export default function AudioPulse({ active, volume, hover }: AudioPulseProps) {
             ref={(el) => {
               if (el) lines.current[i] = el;
             }}
+            className="bg-neutral-30 rounded-full w-1 min-h-1 transition-[height] duration-100"
             style={{ animationDelay: `${i * 133}ms` }}
           />
         ))}

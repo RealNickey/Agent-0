@@ -16,16 +16,9 @@
 
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
-import { ClerkProvider } from '@clerk/nextjs';
+import { ClerkProvider } from "@clerk/nextjs";
 import "../src/tailwind.css"; // Tailwind layers (base, components, utilities)
-import "../src/index.css"; // Legacy global resets
-import "../src/App.scss"; // CSS variables & legacy styles
-import "../src/components/audio-pulse/audio-pulse.scss";
-import "../src/components/logger/logger.scss";
-import "../src/components/side-panel/side-panel.scss";
-import "../src/components/side-panel/react-select.scss";
-import "../src/components/settings-dialog/settings-dialog.scss";
-import "../src/components/control-tray/control-tray.scss";
+import "../src/index.css"; // Global styles and CSS variables
 
 function MyApp({ Component, pageProps }: AppProps) {
   useEffect(() => {

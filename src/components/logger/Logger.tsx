@@ -49,24 +49,34 @@ const LogEntry = memo(
   }): ReactElement => (
     <li
       className={cn(
-        `plain-log`,
+        "block py-2 text-neutral-50 font-mono text-sm font-normal [&>*]:pr-1",
         `source-${log.type.slice(0, log.type.indexOf("."))}`,
         {
-          receive: log.type.includes("receive"),
-          send: log.type.includes("send"),
+          "text-blue-500":
+            log.type.includes("receive") || log.type.includes("source-server"),
+          "text-green-500":
+            (log.type.includes("send") &&
+              !log.type.includes("source-server")) ||
+            log.type.includes("source-client"),
         }
       )}
     >
-      <span className="timestamp">{formatTime(log.date)}</span>
-      <span className="source">{log.type}</span>
-      <span className="message">
+      <span className="w-[70px] flex-grow-0 flex-shrink-0 text-neutral-50">
+        {formatTime(log.date)}
+      </span>
+      <span className="flex-shrink-0 font-bold">{log.type}</span>
+      <span className="flex-grow text-neutral-50">
         <MessageComponent message={log.message} />
       </span>
-      {log.count && <span className="count">{log.count}</span>}
+      {log.count && (
+        <span className="bg-neutral-5 text-xs px-2 py-1 leading-4 align-middle rounded-lg text-blue-500">
+          {log.count}
+        </span>
+      )}
     </li>
   )
 );
-LogEntry.displayName = 'LogEntry';
+LogEntry.displayName = "LogEntry";
 
 const PlainTextMessage = ({
   message,
@@ -91,12 +101,18 @@ function tryParseCodeExecutionResult(output: string) {
 
 const RenderPart = memo(({ part }: { part: Part }) => {
   if (part.text && part.text.length) {
-    return <p className="part part-text">{part.text}</p>;
+    return (
+      <p className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg">
+        {part.text}
+      </p>
+    );
   }
   if (part.executableCode) {
     return (
-      <div className="part part-executableCode">
-        <h5>executableCode: {part.executableCode.language}</h5>
+      <div className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg">
+        <h5 className="m-0 pb-2 border-b border-neutral-20">
+          executableCode: {part.executableCode.language}
+        </h5>
         <SyntaxHighlighter
           language={part.executableCode!.language!.toLowerCase()}
           style={dark}
@@ -108,8 +124,10 @@ const RenderPart = memo(({ part }: { part: Part }) => {
   }
   if (part.codeExecutionResult) {
     return (
-      <div className="part part-codeExecutionResult">
-        <h5>codeExecutionResult: {part.codeExecutionResult!.outcome}</h5>
+      <div className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg">
+        <h5 className="m-0 pb-2 border-b border-neutral-20">
+          codeExecutionResult: {part.codeExecutionResult!.outcome}
+        </h5>
         <SyntaxHighlighter language="json" style={dark}>
           {tryParseCodeExecutionResult(part.codeExecutionResult!.output!)}
         </SyntaxHighlighter>
@@ -118,21 +136,27 @@ const RenderPart = memo(({ part }: { part: Part }) => {
   }
   if (part.inlineData) {
     return (
-      <div className="part part-inlinedata">
-        <h5>Inline Data: {part.inlineData?.mimeType}</h5>
+      <div className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg">
+        <h5 className="m-0 pb-2 border-b border-neutral-20">
+          Inline Data: {part.inlineData?.mimeType}
+        </h5>
       </div>
     );
   }
-  return <div className="part part-unknown">&nbsp;</div>;
+  return (
+    <div className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg">
+      &nbsp;
+    </div>
+  );
 });
-RenderPart.displayName = 'RenderPart';
+RenderPart.displayName = "RenderPart";
 
 const ClientContentLog = memo(({ message }: Message) => {
   const { turns, turnComplete } = message as ClientContentLogType;
   const textParts = turns.filter((part) => !(part.text && part.text === "\n"));
   return (
-    <div className="rich-log client-content user">
-      <h4 className="roler-user">User</h4>
+    <div className="flex justify-center gap-1 block">
+      <h4 className="text-green-500 text-sm uppercase py-2 m-0">User</h4>
       <div key={`message-turn`}>
         {textParts.map((part, j) => (
           <RenderPart part={part} key={`message-part-${j}`} />
@@ -142,15 +166,20 @@ const ClientContentLog = memo(({ message }: Message) => {
     </div>
   );
 });
-ClientContentLog.displayName = 'ClientContentLog';
+ClientContentLog.displayName = "ClientContentLog";
 
 const ToolCallLog = memo(({ message }: Message) => {
   const { toolCall } = message as { toolCall: LiveServerToolCall };
   return (
-    <div className={cn("rich-log tool-call")}>
+    <div className={cn("flex justify-center gap-1 block")}>
       {toolCall.functionCalls?.map((fc, i) => (
-        <div key={fc.id} className="part part-functioncall">
-          <h5>Function call: {fc.name}</h5>
+        <div
+          key={fc.id}
+          className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg"
+        >
+          <h5 className="m-0 pb-2 border-b border-neutral-20">
+            Function call: {fc.name}
+          </h5>
           <SyntaxHighlighter language="json" style={dark}>
             {JSON.stringify(fc, null, "  ")}
           </SyntaxHighlighter>
@@ -159,17 +188,20 @@ const ToolCallLog = memo(({ message }: Message) => {
     </div>
   );
 });
-ToolCallLog.displayName = 'ToolCallLog';
+ToolCallLog.displayName = "ToolCallLog";
 
 const ToolCallCancellationLog = ({ message }: Message): ReactElement => (
-  <div className={cn("rich-log tool-call-cancellation")}>
+  <div className={cn("flex justify-center gap-1 block")}>
     <span>
       {" "}
       ids:{" "}
       {(
         message as { toolCallCancellation: LiveServerToolCallCancellation }
       ).toolCallCancellation.ids?.map((id) => (
-        <span className="inline-code" key={`cancel-${id}`}>
+        <span
+          className="italic after:content-[','] last:after:content-none"
+          key={`cancel-${id}`}
+        >
           &quot;{id}&quot;
         </span>
       ))}
@@ -179,10 +211,15 @@ const ToolCallCancellationLog = ({ message }: Message): ReactElement => (
 
 const ToolResponseLog = memo(
   ({ message }: Message): ReactElement => (
-    <div className={cn("rich-log tool-response")}>
+    <div className={cn("flex justify-center gap-1 block")}>
       {(message as LiveClientToolResponse).functionResponses?.map((fc) => (
-        <div key={`tool-response-${fc.id}`} className="part">
-          <h5>Function Response: {fc.id}</h5>
+        <div
+          key={`tool-response-${fc.id}`}
+          className="bg-neutral-5 p-[14px] mb-1 text-neutral-90 rounded-lg"
+        >
+          <h5 className="m-0 pb-2 border-b border-neutral-20">
+            Function Response: {fc.id}
+          </h5>
           <SyntaxHighlighter language="json" style={dark}>
             {JSON.stringify(fc.response, null, "  ")}
           </SyntaxHighlighter>
@@ -191,7 +228,7 @@ const ToolResponseLog = memo(
     </div>
   )
 );
-ToolResponseLog.displayName = 'ToolResponseLog';
+ToolResponseLog.displayName = "ToolResponseLog";
 
 const ModelTurnLog = ({ message }: Message): ReactElement => {
   const serverContent = (message as { serverContent: LiveServerContent })
@@ -200,8 +237,8 @@ const ModelTurnLog = ({ message }: Message): ReactElement => {
   const { parts } = modelTurn;
 
   return (
-    <div className="rich-log model-turn model">
-      <h4 className="role-model">Model</h4>
+    <div className="flex justify-center gap-1 block">
+      <h4 className="text-blue-500 text-sm uppercase py-2 m-0">Model</h4>
       {parts
         ?.filter((part) => !(part.text && part.text === "\n"))
         .map((part, j) => (
@@ -213,7 +250,7 @@ const ModelTurnLog = ({ message }: Message): ReactElement => {
 
 const CustomPlainTextLog = (msg: string) => {
   const ComponentWithDisplayName = () => <PlainTextMessage message={msg} />;
-  ComponentWithDisplayName.displayName = 'CustomPlainTextLog';
+  ComponentWithDisplayName.displayName = "CustomPlainTextLog";
   return ComponentWithDisplayName;
 };
 
@@ -273,8 +310,8 @@ export default function Logger({ filter = "none" }: LoggerProps) {
   const filterFn = filters[filter];
 
   return (
-    <div className="logger">
-      <ul className="logger-list">
+    <div className="text-gray-300 w-full max-w-full block">
+      <ul className="p-[0_0px_0_25px] overflow-x-hidden w-[calc(100%-45px)]">
         {logs.filter(filterFn).map((log, key) => {
           return (
             <LogEntry MessageComponent={component(log)} log={log} key={key} />

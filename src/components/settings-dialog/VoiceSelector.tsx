@@ -43,11 +43,13 @@ export default function VoiceSelector() {
   );
 
   return (
-    <div className="select-group">
-      <label htmlFor="voice-selector">Voice</label>
+    <div className="flex flex-col gap-1 h-[70px]">
+      <label htmlFor="voice-selector" className="text-[10px]">
+        Voice
+      </label>
       <Select
         id="voice-selector"
-        className="react-select"
+        className="bg-neutral-20 text-neutral-90 w-[193px] h-[30px]"
         classNamePrefix="react-select"
         styles={{
           control: (baseStyles) => ({
@@ -65,6 +67,15 @@ export default function VoiceSelector() {
               : isSelected
               ? "var(--Neutral-20)"
               : undefined,
+          }),
+          menu: (styles) => ({
+            ...styles,
+            background: "var(--Neutral-20)",
+            color: "var(--Neutral-90)",
+          }),
+          singleValue: (styles) => ({
+            ...styles,
+            color: "var(--Neutral-90)",
           }),
         }}
         value={selectedOption}

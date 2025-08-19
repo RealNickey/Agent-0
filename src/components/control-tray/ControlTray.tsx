@@ -48,16 +48,22 @@ type MediaStreamButtonProps = {
 const MediaStreamButton = memo(
   ({ isStreaming, onIcon, offIcon, start, stop }: MediaStreamButtonProps) =>
     isStreaming ? (
-      <button className="action-button" onClick={stop}>
+      <button
+        className="flex items-center justify-center bg-neutral-20 text-neutral-60 text-xl leading-7 lowercase cursor-pointer animate-opacity-pulse transition-all duration-200 ease-in-out w-12 h-12 rounded-[18px] border border-transparent select-none focus:border-2 focus:border-neutral-20 focus:outline focus:outline-2 focus:outline-neutral-80 hover:bg-transparent hover:border-neutral-20"
+        onClick={stop}
+      >
         <span className="material-symbols-outlined">{onIcon}</span>
       </button>
     ) : (
-      <button className="action-button" onClick={start}>
+      <button
+        className="flex items-center justify-center bg-neutral-20 text-neutral-60 text-xl leading-7 lowercase cursor-pointer animate-opacity-pulse transition-all duration-200 ease-in-out w-12 h-12 rounded-[18px] border border-transparent select-none focus:border-2 focus:border-neutral-20 focus:outline focus:outline-2 focus:outline-neutral-80 hover:bg-transparent hover:border-neutral-20"
+        onClick={start}
+      >
         <span className="material-symbols-outlined">{offIcon}</span>
       </button>
     )
 );
-MediaStreamButton.displayName = 'MediaStreamButton';
+MediaStreamButton.displayName = "MediaStreamButton";
 
 function ControlTray({
   videoRef,
@@ -161,11 +167,21 @@ function ControlTray({
   };
 
   return (
-    <section className="control-tray">
+    <section className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex justify-center items-start gap-2 pb-6">
       <canvas style={{ display: "none" }} ref={renderCanvasRef} />
-      <nav className={cn("actions-nav", { disabled: !connected })}>
+      <nav
+        className={cn(
+          "bg-neutral-5 border border-neutral-30 rounded-[27px] inline-flex gap-3 items-center overflow-clip p-[10px] transition-all duration-[600ms] ease-in [&>*]:flex [&>*]:items-center [&>*]:flex-col [&>*]:gap-4",
+          !connected &&
+            "[&_.action-button]:bg-transparent [&_.action-button]:border-neutral-30 [&_.action-button]:text-neutral-30 [&_.action-button.disabled]:bg-transparent [&_.action-button.disabled]:border-neutral-30 [&_.action-button.disabled]:text-neutral-30"
+        )}
+      >
         <button
-          className={cn("action-button mic-button")}
+          className={cn(
+            "relative flex items-center justify-center text-xl leading-7 lowercase cursor-pointer animate-opacity-pulse transition-all duration-200 ease-in-out w-12 h-12 rounded-[18px] border border-transparent select-none z-[1] text-black bg-accent-red hover:bg-red-400 focus:border-2 focus:border-neutral-20 focus:outline focus:outline-2 focus:outline-red-500",
+            "before:absolute before:z-[-1] before:top-[calc(var(--volume)*-1)] before:left-[calc(var(--volume)*-1)] before:block before:content-[''] before:opacity-35 before:bg-red-500 before:w-[calc(100%+var(--volume)*2)] before:h-[calc(100%+var(--volume)*2)] before:rounded-[24px] before:transition-all before:duration-[20ms] before:ease-in-out",
+            (muted || !connected) && "before:bg-transparent"
+          )}
           onClick={() => setMuted(!muted)}
         >
           {!muted ? (
@@ -175,7 +191,7 @@ function ControlTray({
           )}
         </button>
 
-        <div className="action-button no-action outlined">
+        <div className="flex items-center justify-center bg-neutral-20 text-neutral-60 text-xl leading-7 lowercase cursor-pointer animate-opacity-pulse transition-all duration-200 ease-in-out w-12 h-12 rounded-[18px] border border-neutral-20 bg-neutral-2 select-none pointer-events-none">
           <AudioPulse volume={volume} active={connected} hover={false} />
         </div>
 
@@ -200,11 +216,21 @@ function ControlTray({
         {children}
       </nav>
 
-      <div className={cn("connection-container", { connected })}>
-        <div className="connection-button-container">
+      <div
+        className={cn(
+          "flex flex-col justify-center items-center gap-1",
+          connected && "connected"
+        )}
+      >
+        <div className="rounded-[27px] border border-neutral-30 bg-neutral-5 p-[10px]">
           <button
             ref={connectButtonRef}
-            className={cn("action-button connect-toggle", { connected })}
+            className={cn(
+              "flex items-center justify-center text-xl leading-7 lowercase cursor-pointer animate-opacity-pulse transition-all duration-200 ease-in-out w-12 h-12 rounded-[18px] border border-transparent select-none focus:border-2 focus:border-neutral-20 focus:outline focus:outline-2 focus:outline-neutral-80",
+              connected
+                ? "bg-blue-800 text-blue-500 hover:border-blue-500"
+                : "bg-blue-500 text-neutral-5 focus:outline-neutral-80"
+            )}
             onClick={connected ? disconnect : connect}
           >
             <span className="material-symbols-outlined filled">
@@ -212,7 +238,14 @@ function ControlTray({
             </span>
           </button>
         </div>
-        <span className="text-indicator">Streaming</span>
+        <span
+          className={cn(
+            "text-[11px] text-blue-500 select-none transition-opacity",
+            connected ? "opacity-100" : "opacity-0"
+          )}
+        >
+          Streaming
+        </span>
       </div>
       {enableEditingSettings ? <SettingsDialog /> : ""}
     </section>

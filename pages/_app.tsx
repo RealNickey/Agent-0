@@ -16,6 +16,7 @@
 
 import type { AppProps } from "next/app";
 import { useEffect } from "react";
+import { ClerkProvider } from '@clerk/nextjs';
 import "../src/tailwind.css"; // Tailwind layers (base, components, utilities)
 import "../src/index.css"; // Legacy global resets
 import "../src/App.scss"; // CSS variables & legacy styles
@@ -38,7 +39,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     // reportWebVitals();
   }, []);
 
-  return <Component {...pageProps} />;
+  return (
+    <ClerkProvider>
+      <Component {...pageProps} />
+    </ClerkProvider>
+  );
 }
 
 export default MyApp;

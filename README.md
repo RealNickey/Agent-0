@@ -101,6 +101,35 @@ Project consists of:
 - communication layer for processing audio in and out
 - a boilerplate view for starting to build your apps and view logs
 
+## Authentication (Clerk)
+
+This project uses [Clerk](https://clerk.com/) for authentication. A minimal integration has been added:
+
+1. `ClerkProvider` wraps the app in `pages/_app.tsx`.
+2. Landing page (`/` in `pages/index.tsx`) displays a sign-in form (`<SignIn />`) when signed out and automatically redirects signed-in users to `/dashboard`.
+3. The dashboard (`/dashboard`) is the original streaming console UI and is server-side protected. If a user isn't authenticated it redirects back to `/`.
+
+### Required Environment Variables
+
+Add these to your `.env` (see `.env.example`):
+
+```
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
+CLERK_SECRET_KEY=your_backend_secret
+```
+
+### How It Works
+
+- The landing page uses `getServerSideProps` to redirect already-authenticated users to the dashboard early (better UX and avoids a flash of the sign-in form).
+- The dashboard page also uses `getServerSideProps` to guard access on the server—unauthenticated users are redirected back to `/`.
+- Client side, `useAuth()` provides instant redirect if a session is established after load.
+
+### Next Steps (Optional Enhancements)
+
+- Add user profile / sign-out controls to the UI.
+- Persist user-specific settings linked to their Clerk `userId`.
+- Introduce role-based access if needed (e.g., gating experimental features).
+
 ## Available Scripts
 
 In the project directory, you can run:

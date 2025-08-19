@@ -1,9 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  experimental: {
-    esmExternals: true,
-  },
+  // No experimental flags set. Avoid modifying `experimental` to prevent
+  // module resolution issues during Next.js builds.
   sassOptions: {
     includePaths: ["./src"],
   },

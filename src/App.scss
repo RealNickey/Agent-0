@@ -92,25 +92,7 @@ body {
   font-style: italic;
 }
 
-.hidden {
-  display: none;
-}
-
-.flex {
-  display: flex;
-}
-
-.h-screen-full {
-  height: 100vh;
-}
-
-.w-screen-full {
-  width: 100vw;
-}
-
-.flex-col {
-  flex-direction: column;
-}
+/* Removed utility classes now provided by Tailwind (hidden, flex, flex-col, h-screen, w-screen) */
 
 @media (prefers-reduced-motion: no-preference) {
 }

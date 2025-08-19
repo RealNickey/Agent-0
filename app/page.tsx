@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+"use client";
+
 import { useRef, useState } from "react";
-import Head from "next/head";
 import dynamic from "next/dynamic";
 import cn from "classnames";
 import { LiveClientOptions } from "../src/types";
@@ -69,43 +70,35 @@ export default function Home() {
   };
 
   return (
-    <>
-      <Head>
-        <title>Multimodal Live - Console</title>
-        <meta name="description" content="Multimodal Live API Web Console" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
-      <div className="App">
-        <LiveAPIProvider options={apiOptions}>
-          <div className="streaming-console flex h-screen w-screen">
-            <SidePanel />
-            <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
-              <div className="main-app-area flex flex-1 items-center justify-center">
-                {/* APP goes here */}
-                <Altair />
-                <video
-                  className={cn("stream", {
-                    hidden: !videoRef.current || !videoStream,
-                  })}
-                  ref={videoRef}
-                  autoPlay
-                  playsInline
-                />
-              </div>
+    <div className="App">
+      <LiveAPIProvider options={apiOptions}>
+        <div className="streaming-console flex h-screen w-screen">
+          <SidePanel />
+          <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
+            <div className="main-app-area flex flex-1 items-center justify-center">
+              {/* APP goes here */}
+              <Altair />
+              <video
+                className={cn("stream", {
+                  hidden: !videoRef.current || !videoStream,
+                })}
+                ref={videoRef}
+                autoPlay
+                playsInline
+              />
+            </div>
 
-              <ControlTray
-                videoRef={videoRef}
-                supportsVideo={true}
-                onVideoStreamChange={setVideoStream}
-                enableEditingSettings={true}
-              >
-                {/* put your own buttons here */}
-              </ControlTray>
-            </main>
-          </div>
-        </LiveAPIProvider>
-      </div>
-    </>
+            <ControlTray
+              videoRef={videoRef}
+              supportsVideo={true}
+              onVideoStreamChange={setVideoStream}
+              enableEditingSettings={true}
+            >
+              {/* put your own buttons here */}
+            </ControlTray>
+          </main>
+        </div>
+      </LiveAPIProvider>
+    </div>
   );
 }

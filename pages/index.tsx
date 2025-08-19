@@ -78,14 +78,14 @@ export default function Home() {
       </Head>
       <div className="App">
         <LiveAPIProvider options={apiOptions}>
-          <div className="streaming-console flex h-screen w-screen">
+          <div className="bg-neutral-15 text-gray-300 flex h-screen w-screen">
             <SidePanel />
-            <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
-              <div className="main-app-area flex flex-1 items-center justify-center">
+            <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
+              <div className="flex flex-1 items-center justify-center">
                 {/* APP goes here */}
                 <Altair />
                 <video
-                  className={cn("stream", {
+                  className={cn("flex-grow max-w-[90%] rounded-3xl max-h-fit", {
                     hidden: !videoRef.current || !videoStream,
                   })}
                   ref={videoRef}

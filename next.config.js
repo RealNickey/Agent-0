@@ -3,6 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   experimental: {
     esmExternals: true,
+    appDir: false, // Disable App Router since we are using Pages Router with Clerk auth
   },
   sassOptions: {
     includePaths: ["./src"],

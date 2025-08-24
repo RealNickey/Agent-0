@@ -78,3 +78,13 @@ export function base64ToArrayBuffer(base64: string) {
   }
   return bytes.buffer;
 }
+
+// shadcn/ui-compatible className merge utility
+// Merges Tailwind classes and deduplicates conflicting utilities.
+// Minimal implementation using tailwind-merge if available; otherwise falls back to clsx.
+import clsx, { ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}

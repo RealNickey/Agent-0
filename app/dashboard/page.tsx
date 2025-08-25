@@ -29,6 +29,14 @@ const ControlTray = dynamic(
   { ssr: false }
 );
 
+const VoiceVisualization = dynamic(
+  () =>
+    import("../../src/components/voice-visualization/VoiceVisualization").then(
+      (m) => ({ default: m.VoiceVisualization })
+    ),
+  { ssr: false }
+);
+
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
@@ -45,10 +53,20 @@ export default function DashboardPage() {
         <div className="streaming-console flex h-screen w-screen">
           <SidePanel />
           <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
-            <div className="main-app-area flex flex-1 items-center justify-center">
-              <Altair />
+            <div className="main-app-area relative flex flex-1 items-center justify-center w-full">
+              {/* Voice Assistant 3D Visualization (background) */}
+              <div className="absolute inset-0 z-0 w-full h-full">
+                <VoiceVisualization />
+              </div>
+
+              {/* Altair charts overlay */}
+              <div className="relative z-10">
+                <Altair />
+              </div>
+
+              {/* Video stream overlay */}
               <video
-                className={cn("stream", {
+                className={cn("stream relative z-20", {
                   hidden: !videoRef.current || !videoStream,
                 })}
                 ref={videoRef}

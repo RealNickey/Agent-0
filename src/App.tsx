@@ -18,6 +18,7 @@ import { useRef, useState } from "react";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
 import { Altair } from "./components/altair/Altair";
+import { VoiceVisualization } from "./components/voice-visualization/VoiceVisualization";
 import ControlTray from "./components/control-tray/ControlTray";
 import cn from "classnames";
 import { LiveClientOptions } from "./types";
@@ -44,12 +45,21 @@ function App() {
         <div className="streaming-console bg-neutral-15 text-gray-300 flex h-screen w-screen [&_a]:text-gray-300 [&_.disabled]:pointer-events-none [&_.disabled>*]:pointer-events-none">
           <SidePanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
-            <div className="main-app-area flex flex-1 items-center justify-center">
-              {/* APP goes here */}
-              <Altair />
+            <div className="main-app-area flex flex-1 items-center justify-center relative w-full">
+              {/* Voice Assistant 3D Visualization */}
+              <div className="absolute inset-0 z-0 w-full h-full">
+                <VoiceVisualization />
+              </div>
+
+              {/* Altair charts overlay */}
+              <div className="relative z-10">
+                <Altair />
+              </div>
+
+              {/* Video stream overlay */}
               <video
                 className={cn(
-                  "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",
+                  "stream relative z-20 max-w-[90%] rounded-[32px] max-h-fit",
                   {
                     hidden: !videoRef.current || !videoStream,
                   }

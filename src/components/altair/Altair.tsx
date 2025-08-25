@@ -16,28 +16,8 @@
 import { useEffect, useRef, useState, memo } from "react";
 import vegaEmbed from "vega-embed";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
-import {
-  FunctionDeclaration,
-  LiveServerToolCall,
-  Modality,
-  Type,
-} from "@google/genai";
-
-const declaration: FunctionDeclaration = {
-  name: "render_altair",
-  description: "Displays an altair graph in json format.",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      json_graph: {
-        type: Type.STRING,
-        description:
-          "JSON STRING representation of the graph to render. Must be a string, not a json object",
-      },
-    },
-    required: ["json_graph"],
-  },
-};
+import { Modality } from "@google/genai";
+import { altairEvents, getToolDeclarations, initializeTools } from "../../tools";
 
 function AltairComponent() {
   const [jsonString, setJSONString] = useState<string>("");
@@ -45,6 +25,10 @@ function AltairComponent() {
 
   useEffect(() => {
     setModel("models/gemini-2.0-flash-exp");
+    
+    // Initialize tools system
+    initializeTools(client);
+    
     setConfig({
       responseModalities: [Modality.AUDIO],
       speechConfig: {
@@ -60,44 +44,24 @@ function AltairComponent() {
       tools: [
         // there is a free-tier quota for search
         { googleSearch: {} },
-        { functionDeclarations: [declaration] },
+        { functionDeclarations: getToolDeclarations() },
       ],
     });
-  }, [setConfig, setModel]);
+  }, [setConfig, setModel, client]);
 
   useEffect(() => {
-    const onToolCall = (toolCall: LiveServerToolCall) => {
-      if (!toolCall.functionCalls) {
-        return;
-      }
-      const fc = toolCall.functionCalls.find(
-        (fc) => fc.name === declaration.name
-      );
-      if (fc) {
-        const str = (fc.args as any).json_graph;
-        setJSONString(str);
-      }
-      // send data for the response of your tool call
-      // in this case Im just saying it was successful
-      if (toolCall.functionCalls.length) {
-        setTimeout(
-          () =>
-            client.sendToolResponse({
-              functionResponses: toolCall.functionCalls?.map((fc) => ({
-                response: { output: { success: true } },
-                id: fc.id,
-                name: fc.name,
-              })),
-            }),
-          200
-        );
-      }
+    // Listen for graph updates from the tool system
+    const handleGraphUpdate = (event: CustomEvent) => {
+      const { jsonString: newJsonString } = event.detail;
+      setJSONString(newJsonString);
     };
-    client.on("toolcall", onToolCall);
+
+    altairEvents.addEventListener('altair-update', handleGraphUpdate as EventListener);
+    
     return () => {
-      client.off("toolcall", onToolCall);
+      altairEvents.removeEventListener('altair-update', handleGraphUpdate as EventListener);
     };
-  }, [client]);
+  }, []);
 
   const embedRef = useRef<HTMLDivElement>(null);
 
@@ -107,6 +71,7 @@ function AltairComponent() {
       vegaEmbed(embedRef.current, JSON.parse(jsonString));
     }
   }, [embedRef, jsonString]);
+  
   return <div className="vega-embed" ref={embedRef} />;
 }
 

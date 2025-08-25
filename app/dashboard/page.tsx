@@ -19,7 +19,7 @@ const SidePanel = dynamic(
 );
 const Altair = dynamic(
   () =>
-    import("../../src/components/altair/Altair").then((m) => ({
+    import("../../src/tools/altair/Altair").then((m) => ({
       default: m.Altair,
     })),
   { ssr: false }

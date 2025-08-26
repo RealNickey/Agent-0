@@ -13,8 +13,10 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // SSR-friendly initial theme: prefer system preference, no client branching here
+  const prefersDark = false; // SSR can't read media, keep static and let client adjust with ThemeToggle
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

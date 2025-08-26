@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import cn from "classnames";
 import { useRef, useState } from "react";
 import { LiveClientOptions } from "../../src/types";
+import { ThemeToggle } from "../../src/components/ui/theme-toggle";
 
 const LiveAPIProvider = dynamic(
   () =>
@@ -40,11 +41,14 @@ export default function DashboardPage() {
   const apiOptions: LiveClientOptions = { apiKey: API_KEY };
 
   return (
-    <div className="App">
+    <div className="App bg-background text-foreground">
       <LiveAPIProvider options={apiOptions}>
-        <div className="streaming-console flex h-screen w-screen">
+        <div className="streaming-console flex h-screen w-screen bg-background text-foreground">
           <SidePanel />
-          <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
+          <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
+            <div className="absolute top-4 right-4 z-10">
+              <ThemeToggle />
+            </div>
             <div className="main-app-area flex flex-1 items-center justify-center">
               <Altair />
               <video

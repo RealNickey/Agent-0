@@ -1,10 +1,144 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-/* Bridge some existing global CSS variable driven styles */
+/* Design tokens (CSS variables) */
+:root {
+  --background: rgb(248, 249, 252);
+  --foreground: rgb(33, 40, 66);
+  --card: rgb(255, 255, 255);
+  --card-foreground: rgb(33, 40, 66);
+  --popover: rgb(255, 255, 255);
+  --popover-foreground: rgb(33, 40, 66);
+  --primary: rgb(109, 142, 197);
+  --primary-foreground: rgb(255, 255, 255);
+  --secondary: rgb(211, 98, 44);
+  --secondary-foreground: rgb(255, 255, 255);
+  --muted: rgb(241, 245, 249);
+  --muted-foreground: rgb(100, 116, 139);
+  --accent: rgb(240, 200, 69);
+  --accent-foreground: rgb(33, 40, 66);
+  --destructive: rgb(211, 98, 44);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgb(226, 232, 240);
+  --input: rgb(226, 232, 240);
+  --ring: rgb(109, 142, 197);
+  --chart-1: rgb(109, 142, 197);
+  --chart-2: rgb(211, 98, 44);
+  --chart-3: rgb(240, 200, 69);
+  --chart-4: rgb(90, 122, 176);
+  --chart-5: rgb(191, 88, 39);
+  --sidebar: rgb(255, 255, 255);
+  --sidebar-foreground: rgb(33, 40, 66);
+  --sidebar-primary: rgb(109, 142, 197);
+  --sidebar-primary-foreground: rgb(255, 255, 255);
+  --sidebar-accent: rgb(109, 142, 197);
+  --sidebar-accent-foreground: rgb(255, 255, 255);
+  --sidebar-border: rgb(226, 232, 240);
+  --sidebar-ring: rgb(109, 142, 197);
+  --font-sans: Inter;
+  --font-serif: Lora;
+  --font-mono: JetBrains Mono;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: rgb(26, 32, 53);
+  --foreground: rgb(240, 242, 248);
+  --card: rgb(33, 40, 66);
+  --card-foreground: rgb(240, 242, 248);
+  --popover: rgb(33, 40, 66);
+  --popover-foreground: rgb(240, 242, 248);
+  --primary: rgb(109, 142, 197);
+  --primary-foreground: rgb(26, 32, 53);
+  --secondary: rgb(211, 98, 44);
+  --secondary-foreground: rgb(255, 255, 255);
+  --muted: rgb(46, 55, 87);
+  --muted-foreground: rgb(160, 174, 192);
+  --accent: rgb(211, 98, 44);
+  --accent-foreground: rgb(255, 255, 255);
+  --destructive: rgb(211, 98, 44);
+  --destructive-foreground: rgb(255, 255, 255);
+  --border: rgb(46, 55, 87);
+  --input: rgb(46, 55, 87);
+  --ring: rgb(109, 142, 197);
+  --chart-1: rgb(109, 142, 197);
+  --chart-2: rgb(211, 98, 44);
+  --chart-3: rgb(240, 200, 69);
+  --chart-4: rgb(138, 158, 209);
+  --chart-5: rgb(225, 135, 90);
+  --sidebar: rgb(33, 40, 66);
+  --sidebar-foreground: rgb(240, 242, 248);
+  --sidebar-primary: rgb(109, 142, 197);
+  --sidebar-primary-foreground: rgb(26, 32, 53);
+  --sidebar-accent: rgb(109, 142, 197);
+  --sidebar-accent-foreground: rgb(26, 32, 53);
+  --sidebar-border: rgb(46, 55, 87);
+  --sidebar-ring: rgb(109, 142, 197);
+}
+
+/* Map tokens to Tailwind v4 design system so utilities like bg-background work */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Custom neutral scale used throughout the app */
+  --color-neutral-0: var(--Neutral-00);
+  --color-neutral-5: var(--Neutral-5);
+  --color-neutral-10: var(--Neutral-10);
+  --color-neutral-15: var(--Neutral-15);
+  --color-neutral-20: var(--Neutral-20);
+  --color-neutral-30: var(--Neutral-30);
+  --color-neutral-50: var(--Neutral-50);
+  --color-neutral-60: var(--Neutral-60);
+  --color-neutral-80: var(--Neutral-80);
+  --color-neutral-90: var(--Neutral-90);
+}
+
+/* Basic page defaults */
+html,
 body {
+  background: var(--background);
+  color: var(--foreground);
+}
+body {
+  letter-spacing: var(--tracking-normal, 0);
   font-family: "Space Mono", monospace;
-  background-color: var(--Neutral-30);
-  color: white;
 }

@@ -1,31 +1,28 @@
-# Movie Review Tool - TMDb Integration
+# Movie Browser Tool - Streamlined TMDb Integration
 
 ## Overview
 
-The Movie Review Tool is an AI-powered movie discovery and review platform that integrates with The Movie Database (TMDb) API and Google's Gemini AI. This tool allows users to:
+The Movie Browser Tool is a streamlined, AI-powered movie discovery platform that integrates with The Movie Database (TMDb) API and Google's Gemini AI. This tool focuses on core functionality:
 
-- 🔍 **Search for movies** by title, year, or keywords
-- 📊 **Browse popular and top-rated movies**
-- 🎬 **View detailed movie information** including cast, crew, and user reviews
-- 🤖 **Generate AI-powered movie reviews** using Google's Gemini
-- 💡 **Get personalized movie recommendations**
+- 🔍 **Search for movies** by title or keywords
+- 🎬 **View detailed movie information** including cast, crew, and ratings  
+- 📊 **Browse popular movies** as the default view
+- 🤖 **AI-powered assistance** for natural language movie queries
 
 ## Features
 
-### AI-Powered Tools
-The tool includes several AI function declarations that allow the Gemini assistant to:
+### Essential AI Tools
+The tool includes three core AI function declarations:
 
 1. **search_movies** - Search for movies by title or keywords
-2. **get_movie_details** - Get detailed information about specific movies
+2. **get_movie_details** - Get detailed information about specific movies  
 3. **get_popular_movies** - Fetch currently popular movies
-4. **get_top_rated_movies** - Get top-rated movies of all time
-5. **get_movie_recommendations** - Get recommendations based on a movie
 
-### Interactive Interface
-- **Dual-panel layout**: Movie browser on the left, reviews on the right
+### Clean Interface
+- **Single-view layout**: Streamlined movie grid and details view
 - **Real-time AI interaction**: Voice and text communication with Gemini
-- **Visual movie cards**: Rich display with posters, ratings, and details
-- **User reviews**: Access to community reviews from TMDb
+- **Visual movie cards**: Clean display with posters, ratings, and details
+- **Responsive design**: Works on desktop and mobile devices
 
 ## Setup
 
@@ -47,103 +44,110 @@ REACT_APP_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Installation
-The tool is already integrated into the project. Simply:
+The tool is integrated into the project:
 
 1. Set up your environment variables
 2. Run the development server: `npm run dev`
-3. Navigate to the dashboard: `http://localhost:3000/dashboard`
-4. Click the "🎬 Movie Reviews" button to access the tool
+3. Navigate to: `http://localhost:3000/dashboard`
+4. Click the "🎬 Movie Browser" button
 
 ## Usage
 
 ### Voice Commands
-You can interact with the AI using natural language:
+Interact with the AI using natural language:
 
 - *"Show me popular movies"*
-- *"Search for movies with Tom Hanks"*
+- *"Search for Tom Hanks movies"*
 - *"Tell me about Inception"*
-- *"Recommend movies similar to The Matrix"*
-- *"Generate a review for this movie"*
+- *"Find sci-fi movies from 2023"*
 
 ### Interface Navigation
-1. **Browse Movies**: Use the left panel to search and browse movies
-2. **Select Movie**: Click on any movie to view details and reviews
-3. **AI Reviews**: Click "Generate AI Review" for AI-powered analysis
-4. **Voice Interaction**: Use the microphone to talk to the AI assistant
+1. **Browse Movies**: Default view shows popular movies in a grid
+2. **Search**: Ask the AI to search for specific movies
+3. **View Details**: Click any movie card to see detailed information
+4. **Voice Interaction**: Use the microphone for hands-free browsing
 
 ## Technical Architecture
 
 ### Components
-- **TMDbTool**: Main tool component with AI function declarations
-- **MovieReviewTool**: UI component with dual-panel layout
-- **API Routes**: Next.js API routes for TMDb integration
+- **MovieBrowser**: Main component with AI integration and UI
+- **MovieCard**: Reusable movie display component
+- **MovieDetails**: Detailed movie information view
 
-### API Endpoints
+### API Endpoints (Streamlined)
 - `/api/movies/search` - Movie search
-- `/api/movies/popular` - Popular movies
-- `/api/movies/top-rated` - Top-rated movies
+- `/api/movies/popular` - Popular movies  
 - `/api/movies/[id]` - Movie details
-- `/api/movies/[id]/reviews` - Movie reviews
-- `/api/movies/[id]/recommendations` - Movie recommendations
 
 ### Data Flow
 1. User interacts with AI via voice/text
 2. AI uses tool functions to query TMDb API
-3. Results are displayed in the interface
-4. User can generate AI reviews for selected movies
+3. Results update the interface automatically
+4. User can browse movies and view details
+
+## Code Quality Features
+
+- **TypeScript**: Full type safety throughout
+- **Error Handling**: Graceful degradation for API failures
+- **Loading States**: Visual feedback during data fetching
+- **Responsive Design**: Mobile-friendly interface
+- **Performance**: Optimized with proper React patterns
 
 ## Example Interactions
 
-### Search for Movies
+### Browse Popular Movies
 ```
-User: "Find me some good sci-fi movies from 2023"
-AI: [Uses search_movies tool with relevant parameters]
-```
-
-### Get Movie Details
-```
-User: "Tell me about Dune: Part Two"
-AI: [Uses search_movies to find the movie, then get_movie_details for full info]
+User: "Show me what's popular right now"
+AI: [Uses get_popular_movies tool and displays grid]
 ```
 
-### Generate Reviews
+### Search Movies
 ```
-User: "Write a review for this movie"
-AI: [Analyzes movie data and generates comprehensive review]
+User: "Find movies with Ryan Gosling"
+AI: [Uses search_movies with "Ryan Gosling" query]
 ```
+
+### View Details
+```
+User: "Tell me about Blade Runner 2049"  
+AI: [Searches for movie, then shows details using get_movie_details]
+```
+
+## Performance Benefits
+
+### Reduced Complexity
+- **3 core functions** instead of 5+ complex tools
+- **Single component** instead of multiple UI pieces
+- **Essential API routes** only (3 instead of 6+)
+
+### Improved Efficiency  
+- **Faster load times** with streamlined code
+- **Better maintainability** with focused functionality
+- **Cleaner AI interactions** with simplified tool set
 
 ## Customization
 
-### Adding New Tools
-To add new movie-related tools:
-
-1. Define the function declaration in `tmdb-tool.tsx`
-2. Add the API endpoint in `/app/api/movies/`
+### Adding Features
+To extend functionality:
+1. Add new function declaration in `movie-browser.tsx`
+2. Create corresponding API endpoint
 3. Handle the tool call in the `onToolCall` function
 
 ### Styling
-The tool uses Tailwind CSS classes and can be customized by modifying the component styles.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **TMDb API Errors**: Check your API key and rate limits
-2. **AI Not Responding**: Verify Gemini API key and connection
-3. **Missing Movie Data**: Some movies may have limited information
-
-### Debug Mode
-Enable console logging by setting development mode to see API calls and responses.
+Uses Tailwind CSS for easy customization of:
+- Color schemes
+- Layout responsiveness  
+- Component spacing
+- Typography
 
 ## Contributing
 
-When contributing to the Movie Review Tool:
-
-1. Follow the existing code structure
-2. Add proper TypeScript types
-3. Include error handling
-4. Test with various movie queries
-5. Update documentation for new features
+When contributing:
+1. Maintain the streamlined approach
+2. Focus on core movie functionality
+3. Ensure TypeScript compliance
+4. Test AI interactions thoroughly
+5. Keep the interface clean and intuitive
 
 ## License
 

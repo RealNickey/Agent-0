@@ -188,31 +188,6 @@ type LocaleOpts = {
 
 type PageOpts = { page?: number } & LocaleOpts;
 
-// Discover movies
-export async function discoverMovies(params: {
-  page?: number;
-  sort_by?:
-    | "popularity.asc"
-    | "popularity.desc"
-    | "release_date.asc"
-    | "release_date.desc"
-    | "revenue.asc"
-    | "revenue.desc"
-    | "primary_release_date.asc"
-    | "primary_release_date.desc"
-    | "vote_average.asc"
-    | "vote_average.desc";
-  with_genres?: string; // comma-separated genre ids
-  with_original_language?: string; // e.g., 'en'
-  primary_release_year?: number;
-  include_adult?: boolean;
-  language?: string;
-  region?: string;
-}): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get("/discover/movie", { params });
-  return PaginatedMoviesSchema.parse(data);
-}
-
 // Search movies by query
 export async function searchMovies(options: {
   query: string;
@@ -235,26 +210,13 @@ export async function searchMovies(options: {
   return PaginatedMoviesSchema.parse(data);
 }
 
-// Popular, Top Rated, Trending
+// Popular movies
 export async function getPopularMovies(opts: PageOpts = {}): Promise<z.infer<typeof PaginatedMoviesSchema>> {
   const { data } = await client.get("/movie/popular", { params: opts });
   return PaginatedMoviesSchema.parse(data);
 }
 
-export async function getTopRatedMovies(opts: PageOpts = {}): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get("/movie/top_rated", { params: opts });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-export async function getTrendingMovies(
-  time_window: "day" | "week" = "week",
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get(`/trending/movie/${time_window}`, { params: opts });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-// Movie details and related
+// Movie details
 export async function getMovieDetails(
   movieId: number,
   opts: LocaleOpts & { append_to_response?: string } = {}
@@ -265,43 +227,9 @@ export async function getMovieDetails(
   return MovieDetailSchema.parse(data);
 }
 
-export async function getMovieCredits(movieId: number, opts: LocaleOpts = {}): Promise<Credits> {
-  const { data } = await client.get(`/movie/${movieId}/credits`, { params: opts });
-  return CreditsSchema.parse(data);
-}
-
-export async function getSimilarMovies(
-  movieId: number,
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get(`/movie/${movieId}/similar`, { params: opts });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-export async function getRecommendedMovies(
-  movieId: number,
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get(`/movie/${movieId}/recommendations`, { params: opts });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-export async function getMovieReviews(
-  movieId: number,
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedReviewsSchema>> {
-  const { data } = await client.get(`/movie/${movieId}/reviews`, { params: opts });
-  return PaginatedReviewsSchema.parse(data);
-}
-
 // Genres
 export const GenresListSchema = z.object({ genres: z.array(GenreSchema) });
 export type GenresList = z.infer<typeof GenresListSchema>;
-
-export async function getGenres(opts: LocaleOpts = {}): Promise<GenresList> {
-  const { data } = await client.get("/genre/movie/list", { params: opts });
-  return GenresListSchema.parse(data);
-}
 
 // Minimal adapter to a simpler movie card interface
 export type MovieCard = {

@@ -25,7 +25,7 @@ const Altair = dynamic(
     })),
   { ssr: false }
 );
-const TMDbMovieReview = dynamic(
+const TMDbMovieBrowser = dynamic(
   () => import("../../src/tools/tmdb"),
   { ssr: false }
 );
@@ -66,7 +66,7 @@ export default function DashboardPage() {
                     : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                 )}
               >
-                🎬 Movie Reviews
+                🎬 Movie Browser
               </button>
               <button
                 onClick={() => setActiveApp('altair')}
@@ -83,7 +83,7 @@ export default function DashboardPage() {
             
             <div className="main-app-area flex flex-1 items-center justify-center w-full">
               {/* Conditional App Rendering */}
-              {activeApp === 'movies' && <TMDbMovieReview />}
+              {activeApp === 'movies' && <TMDbMovieBrowser />}
               {activeApp === 'altair' && <Altair />}
               <video
                 className={cn(

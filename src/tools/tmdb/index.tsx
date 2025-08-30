@@ -1,10 +1,9 @@
 /**
- * TMDb Movie Tools - Main Export
- * Provides movie search, details, reviews, and AI-powered movie recommendations
+ * TMDb Movie Tools - Streamlined Export
+ * Core functionality: search, popular movies, movie details
  */
 
-export { TMDbTool } from './tmdb-tool';
-export { MovieReviewTool as TMDbMovieReview } from './movie-review-tool';
+export { MovieBrowser } from './movie-browser';
 
-// Export the MovieReviewTool as the default component for easier integration
-export { MovieReviewTool as default } from './movie-review-tool';
+// Export the MovieBrowser as the default component
+export { MovieBrowser as default } from './movie-browser';

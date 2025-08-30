@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchMovies, toMovieCard, assertTmdbEnv } from "@/lib/tmdb";
+import { searchMovies, toMovieCard, assertTmdbEnv } from "../../../../src/lib/tmdb";
 
 export const dynamic = "force-dynamic"; // avoid caching by default for search
 

@@ -25,6 +25,10 @@ const Altair = dynamic(
     })),
   { ssr: false }
 );
+const TMDbMovieReview = dynamic(
+  () => import("../../src/tools/tmdb"),
+  { ssr: false }
+);
 const ControlTray = dynamic(
   () => import("../../src/components/control-tray/ControlTray"),
   { ssr: false }
@@ -33,6 +37,7 @@ const ControlTray = dynamic(
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
+  const [activeApp, setActiveApp] = useState<'movies' | 'altair'>('movies');
 
   const API_KEY =
     typeof window !== "undefined"
@@ -45,27 +50,62 @@ export default function DashboardPage() {
       <LiveAPIProvider options={apiOptions}>
         <div className="streaming-console flex h-screen w-screen bg-background text-foreground">
           <SidePanel />
-          <main className="flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
+          <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
             <div className="absolute top-4 right-4 z-10">
               <ThemeToggle />
             </div>
-            <div className="main-app-area flex flex-1 items-center justify-center">
-              <Altair />
+            
+            {/* App Toggle Buttons */}
+            <div className="absolute top-4 left-4 z-10 flex gap-2">
+              <button
+                onClick={() => setActiveApp('movies')}
+                className={cn(
+                  "px-4 py-2 rounded text-sm font-medium transition-colors",
+                  activeApp === 'movies' 
+                    ? "bg-blue-600 text-white" 
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                )}
+              >
+                🎬 Movie Reviews
+              </button>
+              <button
+                onClick={() => setActiveApp('altair')}
+                className={cn(
+                  "px-4 py-2 rounded text-sm font-medium transition-colors",
+                  activeApp === 'altair' 
+                    ? "bg-blue-600 text-white" 
+                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                )}
+              >
+                📊 Altair Charts
+              </button>
+            </div>
+            
+            <div className="main-app-area flex flex-1 items-center justify-center w-full">
+              {/* Conditional App Rendering */}
+              {activeApp === 'movies' && <TMDbMovieReview />}
+              {activeApp === 'altair' && <Altair />}
               <video
-                className={cn("stream", {
-                  hidden: !videoRef.current || !videoStream,
-                })}
+                className={cn(
+                  "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",
+                  {
+                    hidden: !videoRef.current || !videoStream,
+                  }
+                )}
                 ref={videoRef}
                 autoPlay
                 playsInline
               />
             </div>
+
             <ControlTray
               videoRef={videoRef}
               supportsVideo={true}
               onVideoStreamChange={setVideoStream}
               enableEditingSettings={true}
-            />
+            >
+              {/* put your own buttons here */}
+            </ControlTray>
           </main>
         </div>
       </LiveAPIProvider>

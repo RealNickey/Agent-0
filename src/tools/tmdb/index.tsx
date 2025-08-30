@@ -1,9 +1,9 @@
 /**
- * TMDb Movie Tools - Streamlined Export
- * Core functionality: search, popular movies, movie details
+ * TMDb Movie Tools - Export
+ * Default to the tool-driven component (no default browse view).
  */
 
-export { MovieBrowser } from './movie-browser';
+export { TMDbTool } from './tmdb-tool';
 
-// Export the MovieBrowser as the default component
-export { MovieBrowser as default } from './movie-browser';
+// Export the TMDbTool as the default component
+export { TMDbTool as default } from './tmdb-tool';

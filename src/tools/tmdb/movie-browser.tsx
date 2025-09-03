@@ -93,7 +93,9 @@ async function makeAPICall(endpoint: string, params: Record<string, any> = {}) {
     const response = await fetch(url.toString());
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+      throw new Error(
+        errorData.error || `HTTP ${response.status}: ${response.statusText}`
+      );
     }
 
     return await response.json();
@@ -104,15 +106,19 @@ async function makeAPICall(endpoint: string, params: Record<string, any> = {}) {
 }
 
 // Movie Card Component
-function MovieCard({ movie, onSelect, isSelected }: { 
-  movie: Movie; 
+function MovieCard({
+  movie,
+  onSelect,
+  isSelected,
+}: {
+  movie: Movie;
   onSelect: (movie: Movie) => void;
   isSelected: boolean;
 }) {
   return (
-    <div 
+    <div
       className={`movie-card bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg ${
-        isSelected ? 'ring-2 ring-blue-500' : ''
+        isSelected ? "ring-2 ring-blue-500" : ""
       }`}
       onClick={() => onSelect(movie)}
     >
@@ -124,8 +130,12 @@ function MovieCard({ movie, onSelect, isSelected }: {
         />
       )}
       <div className="p-3">
-        <h3 className="text-white text-sm font-semibold line-clamp-2 mb-1">{movie.title}</h3>
-        <p className="text-gray-400 text-xs mb-1">{movie.releaseDate?.split('-')[0]}</p>
+        <h3 className="text-white text-sm font-semibold line-clamp-2 mb-1">
+          {movie.title}
+        </h3>
+        <p className="text-gray-400 text-xs mb-1">
+          {movie.releaseDate?.split("-")[0]}
+        </p>
         <p className="text-yellow-400 text-xs">★ {movie.rating.toFixed(1)}</p>
       </div>
     </div>
@@ -147,10 +157,23 @@ function MovieDetails({ movie }: { movie: MovieDetails }) {
         <div className="flex-1">
           <h2 className="text-3xl font-bold text-white mb-3">{movie.title}</h2>
           <div className="text-sm text-gray-400 mb-4 space-y-1">
-            <p><strong>Release Date:</strong> {movie.releaseDate}</p>
-            <p><strong>Rating:</strong> {movie.rating}/10 ({movie.vote_count} votes)</p>
-            {movie.runtime && <p><strong>Runtime:</strong> {movie.runtime} minutes</p>}
-            {movie.status && <p><strong>Status:</strong> {movie.status}</p>}
+            <p>
+              <strong>Release Date:</strong> {movie.releaseDate}
+            </p>
+            <p>
+              <strong>Rating:</strong> {movie.rating}/10 ({movie.vote_count}{" "}
+              votes)
+            </p>
+            {movie.runtime && (
+              <p>
+                <strong>Runtime:</strong> {movie.runtime} minutes
+              </p>
+            )}
+            {movie.status && (
+              <p>
+                <strong>Status:</strong> {movie.status}
+              </p>
+            )}
           </div>
           <p className="text-gray-300 leading-relaxed">{movie.overview}</p>
         </div>
@@ -164,12 +187,12 @@ export function MovieBrowser() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<MovieDetails | null>(null);
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<'grid' | 'details'>('grid');
+  const [view, setView] = useState<"grid" | "details">("grid");
   const { client, setConfig, setModel } = useLiveAPIContext();
 
   // Initialize AI configuration
   useEffect(() => {
-    setModel("models/gemini-2.0-flash-exp");
+    setModel("models/gemini-live-2.5-flash-preview");
     setConfig({
       responseModalities: [Modality.AUDIO],
       speechConfig: {
@@ -189,12 +212,12 @@ export function MovieBrowser() {
         ],
       },
       tools: [
-        { 
+        {
           functionDeclarations: [
             movieSearchDeclaration,
             movieDetailsDeclaration,
             popularMoviesDeclaration,
-          ]
+          ],
         },
       ],
     });
@@ -222,12 +245,12 @@ export function MovieBrowser() {
     try {
       const details = await makeAPICall(`/api/movies/${movie.id}`);
       setSelectedMovie(details);
-      setView('details');
+      setView("details");
     } catch (error) {
       console.error("Failed to load movie details:", error);
       // Fallback to basic movie info
       setSelectedMovie(movie as MovieDetails);
-      setView('details');
+      setView("details");
     } finally {
       setLoading(false);
     }
@@ -243,7 +266,7 @@ export function MovieBrowser() {
         id: string;
         name: string;
       }> = [];
-      
+
       for (const fc of toolCall.functionCalls) {
         let result;
 
@@ -251,9 +274,12 @@ export function MovieBrowser() {
           switch (fc.name) {
             case "search_movies":
               const { query, page = 1 } = fc.args as any;
-              const searchData = await makeAPICall("/api/movies/search", { q: query, page });
+              const searchData = await makeAPICall("/api/movies/search", {
+                q: query,
+                page,
+              });
               setMovies(searchData.items || []);
-              setView('grid');
+              setView("grid");
               result = { success: true, data: searchData };
               break;
 
@@ -261,29 +287,37 @@ export function MovieBrowser() {
               const { movie_id } = fc.args as any;
               const detailsData = await makeAPICall(`/api/movies/${movie_id}`);
               setSelectedMovie(detailsData);
-              setView('details');
+              setView("details");
               result = { success: true, data: detailsData };
               break;
 
             case "get_popular_movies":
               const { page: popularPage = 1 } = fc.args as any;
-              const popularData = await makeAPICall("/api/movies/popular", { page: popularPage });
+              const popularData = await makeAPICall("/api/movies/popular", {
+                page: popularPage,
+              });
               setMovies(popularData.items || []);
-              setView('grid');
+              setView("grid");
               result = { success: true, data: popularData };
               break;
 
             default:
-              result = { success: false, error: `Unknown function: ${fc.name}` };
+              result = {
+                success: false,
+                error: `Unknown function: ${fc.name}`,
+              };
           }
         } catch (error) {
-          result = { success: false, error: error instanceof Error ? error.message : "Unknown error" };
+          result = {
+            success: false,
+            error: error instanceof Error ? error.message : "Unknown error",
+          };
         }
 
         responses.push({
           response: { output: result },
-          id: fc.id || '',
-          name: fc.name || '',
+          id: fc.id || "",
+          name: fc.name || "",
         });
       }
 
@@ -309,18 +343,25 @@ export function MovieBrowser() {
           <h1 className="text-2xl font-bold">Movie Browser</h1>
           <div className="flex gap-2">
             <button
-              onClick={() => { setView('grid'); loadPopularMovies(); }}
+              onClick={() => {
+                setView("grid");
+                loadPopularMovies();
+              }}
               className={`px-4 py-2 rounded text-sm transition-colors ${
-                view === 'grid' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600'
+                view === "grid"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 hover:bg-gray-600"
               }`}
             >
               Browse Movies
             </button>
             {selectedMovie && (
               <button
-                onClick={() => setView('details')}
+                onClick={() => setView("details")}
                 className={`px-4 py-2 rounded text-sm transition-colors ${
-                  view === 'details' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600'
+                  view === "details"
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-700 hover:bg-gray-600"
                 }`}
               >
                 Movie Details
@@ -341,7 +382,7 @@ export function MovieBrowser() {
           </div>
         )}
 
-        {!loading && view === 'grid' && (
+        {!loading && view === "grid" && (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {movies.map((movie) => (
               <MovieCard
@@ -354,14 +395,17 @@ export function MovieBrowser() {
           </div>
         )}
 
-        {!loading && view === 'details' && selectedMovie && (
+        {!loading && view === "details" && selectedMovie && (
           <MovieDetails movie={selectedMovie} />
         )}
 
-        {!loading && view === 'grid' && movies.length === 0 && (
+        {!loading && view === "grid" && movies.length === 0 && (
           <div className="text-center text-gray-500 mt-16">
             <p className="text-lg mb-2">🎬</p>
-            <p>No movies found. Try asking the AI to search for movies or show popular films.</p>
+            <p>
+              No movies found. Try asking the AI to search for movies or show
+              popular films.
+            </p>
           </div>
         )}
       </div>

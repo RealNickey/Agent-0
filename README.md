@@ -159,3 +159,24 @@ Starts the production server after running `npm run build`.
 Runs the development server with HTTPS enabled using Next.js experimental HTTPS support.
 
 _This is an experiment showcasing the Live API, not an official Google product. We’ll do our best to support and maintain this experiment but your mileage may vary. We encourage open sourcing projects as a way of learning from each other. Please respect our and other creators' rights, including copyright and trademark rights when present, when sharing these works and creating derivative work. If you want more info on Google's policy, you can find that [here](https://developers.google.com/terms/site-policies)._
+
+## TMDb API Client Utility
+
+We include a server-only TMDb client at `src/lib/tmdb.ts` built with axios + zod for type-safe, reusable movie endpoints (search, details, reviews, credits, discover, popular, top rated, trending) and image helpers.
+
+Environment variables (set in `.env.local` for local dev):
+
+- `TMDB_ACCESS_TOKEN`: TMDb v4 auth token (recommended)
+- or `TMDB_API_KEY`: TMDb v3 API key (fallback)
+
+Example (server component or server action):
+
+```ts
+import { searchMovies, toMovieCard } from "@/src/lib/tmdb";
+
+export default async function Page() {
+  const data = await searchMovies({ query: "Inception" });
+  const cards = data.results.map(toMovieCard);
+  return <pre>{JSON.stringify(cards.slice(0, 3), null, 2)}</pre>;
+}
+```

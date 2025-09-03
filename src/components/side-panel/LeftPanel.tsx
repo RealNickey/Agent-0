@@ -1,5 +1,8 @@
+"use client";
+
 import cn from "classnames";
 import { useMemo, useState } from "react";
+import { useClerk, useUser, SignOutButton } from "@clerk/nextjs";
 import {
   RiSidebarFoldLine,
   RiSidebarUnfoldLine,
@@ -8,6 +11,8 @@ import {
   RiBookOpenLine,
   RiHistoryLine,
   RiTimerLine,
+  RiUser3Line,
+  RiLogoutBoxRLine,
 } from "react-icons/ri";
 
 /**
@@ -19,6 +24,10 @@ export default function LeftPanel() {
   const [active, setActive] = useState<
     "tasks" | "notes" | "focus" | "library"
   >("tasks");
+  const [accountOpen, setAccountOpen] = useState(false);
+
+  const { user, isSignedIn } = useUser();
+  const { signOut, openSignIn, openUserProfile } = useClerk();
 
   // Placeholder history items (replace with real data when wired up)
   const history = useMemo(
@@ -42,15 +51,15 @@ export default function LeftPanel() {
       {/* Header with Logo and Collapse/Expand */}
       <header
         className={cn(
-          "flex items-center border-b border-neutral-20 h-12",
-          open ? "px-3 justify-between" : "px-2 justify-center"
+          "relative flex items-center border-b border-neutral-20 h-12",
+          open ? "px-3" : "px-2"
         )}
       >
         {/* Logo */}
         <div
           className={cn(
-            "flex items-center gap-2 transition-opacity duration-200",
-            open ? "opacity-100" : "opacity-0 pointer-events-none select-none"
+            "flex items-center gap-2 transition-all duration-200",
+            open ? "opacity-100" : "opacity-0 w-0 overflow-hidden"
           )}
         >
           <div className="h-7 w-7 rounded-md bg-neutral-20 grid place-items-center text-neutral-80 text-[12px] font-bold">
@@ -61,26 +70,28 @@ export default function LeftPanel() {
           </span>
         </div>
 
-        {/* Toggle Button (always visible) */}
-        {open ? (
-          <button
-            className="h-[30px] transition-transform duration-200 ease-in"
-            aria-label="Collapse left panel"
-            title="Collapse"
-            onClick={() => setOpen(false)}
-          >
-            <RiSidebarFoldLine color="#b4b8bb" />
-          </button>
-        ) : (
-          <button
-            className="h-[30px] transition-transform duration-200 ease-in"
-            aria-label="Expand left panel"
-            title="Expand"
-            onClick={() => setOpen(true)}
-          >
-            <RiSidebarUnfoldLine color="#b4b8bb" />
-          </button>
-        )}
+        {/* Toggle Button (always visible, pinned right) */}
+        <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10">
+          {open ? (
+            <button
+              className="h-[30px] w-[30px] grid place-items-center rounded-md hover:bg-neutral-10 transition-colors"
+              aria-label="Collapse left panel"
+              title="Collapse"
+              onClick={() => setOpen(false)}
+            >
+              <RiSidebarFoldLine color="#b4b8bb" />
+            </button>
+          ) : (
+            <button
+              className="h-[30px] w-[30px] grid place-items-center rounded-md hover:bg-neutral-10 transition-colors"
+              aria-label="Expand left panel"
+              title="Expand"
+              onClick={() => setOpen(true)}
+            >
+              <RiSidebarUnfoldLine color="#b4b8bb" />
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Main Nav */}
@@ -226,12 +237,141 @@ export default function LeftPanel() {
         )}
       </nav>
 
-      {/* Footer (collapsed rail shows nothing) */}
-      {open && (
-        <footer className="mt-auto p-2 border-t border-neutral-20 text-[11px] text-neutral-60">
-          <div className="px-1">v0.1 · Personal workspace</div>
-        </footer>
-      )}
+      {/* Account footer */}
+      <div className="mt-auto relative border-t border-neutral-20">
+        {/* Expanded account row */}
+        {open ? (
+          <div className="p-2">
+            <button
+              className="w-full flex items-center gap-2 rounded-md px-2 py-2 hover:bg-neutral-10 text-left"
+              aria-label="Account menu"
+              onClick={() => setAccountOpen((v) => !v)}
+            >
+              {/* Avatar placeholder */}
+              <div className="h-7 w-7 rounded-full bg-neutral-20 grid place-items-center text-[11px] text-neutral-80">
+                {isSignedIn ? (user?.firstName?.[0] || user?.lastName?.[0] || "U").toUpperCase() : "?"}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-[13px] text-neutral-90">
+                  {isSignedIn ? user?.fullName || user?.username || "Account" : "Sign in"}
+                </div>
+                <div className="truncate text-[11px] text-neutral-60">
+                  {isSignedIn ? user?.primaryEmailAddress?.emailAddress : "Access your account"}
+                </div>
+              </div>
+            </button>
+
+            {accountOpen && (
+              <div className="absolute bottom-12 left-2 right-2 rounded-md border border-neutral-20 bg-neutral-0 shadow-lg z-10">
+                <ul className="py-1">
+                  {isSignedIn ? (
+                    <>
+                      <li>
+                        <button
+                          className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-neutral-10 text-neutral-80"
+                          onClick={() => {
+                            setAccountOpen(false);
+                            try {
+                              openUserProfile?.();
+                            } catch {
+                              // no-op fallback if not available
+                            }
+                          }}
+                        >
+                          <RiUser3Line size={16} />
+                          Manage account
+                        </button>
+                      </li>
+                      <li>
+                        <SignOutButton signOutOptions={{ redirectUrl: "/" }}>
+                          <button
+                            className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-neutral-10 text-red-500"
+                            onClick={() => setAccountOpen(false)}
+                          >
+                            <RiLogoutBoxRLine size={16} />
+                            Logout
+                          </button>
+                        </SignOutButton>
+                      </li>
+                    </>
+                  ) : (
+                    <li>
+                      <button
+                        className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-neutral-10 text-neutral-80"
+                        onClick={() => {
+                          setAccountOpen(false);
+                          try {
+                            openSignIn?.();
+                          } catch {
+                            window.location.href = "/";
+                          }
+                        }}
+                      >
+                        <RiUser3Line size={16} />
+                        Sign in
+                      </button>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+          </div>
+        ) : (
+          // Collapsed account button (icon-only)
+          <div className="p-2 flex justify-center">
+            <button
+              className="w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10"
+              aria-label={isSignedIn ? "Account menu" : "Sign in"}
+              onClick={() => {
+                if (isSignedIn) setAccountOpen((v) => !v);
+                else {
+                  try {
+                    openSignIn?.();
+                  } catch {
+                    window.location.href = "/";
+                  }
+                }
+              }}
+              title={isSignedIn ? (user?.fullName || user?.username || "Account") : "Sign in"}
+            >
+              <RiUser3Line size={18} />
+            </button>
+            {accountOpen && isSignedIn && (
+              <div className="absolute bottom-12 left-2 right-2 rounded-md border border-neutral-20 bg-neutral-0 shadow-lg z-10">
+                <ul className="py-1">
+                  <li>
+                    <button
+                      className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-neutral-10 text-neutral-80"
+                      onClick={() => {
+                        setAccountOpen(false);
+                        try {
+                          openUserProfile?.();
+                        } catch {
+                          // no-op
+                        }
+                      }}
+                    >
+                      <RiUser3Line size={16} />
+                      Manage account
+                    </button>
+                  </li>
+                  <li>
+                    <SignOutButton signOutOptions={{ redirectUrl: "/" }}>
+                      <button
+                        className="w-full flex items-center gap-2 px-3 py-2 text-[13px] hover:bg-neutral-10 text-red-500"
+                        onClick={() => setAccountOpen(false)}
+                      >
+                        <RiLogoutBoxRLine size={16} />
+                        Logout
+                      </button>
+                    </SignOutButton>
+                  </li>
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -35,7 +35,7 @@ export function MovieReviewTool() {
 
   const handleMovieSelect = async (movie: Movie) => {
     setSelectedMovie(movie);
-    
+
     // Fetch existing reviews
     try {
       const response = await fetch(`/api/movies/${movie.id}/reviews`);
@@ -50,12 +50,14 @@ export function MovieReviewTool() {
 
   const generateAIReview = async () => {
     if (!selectedMovie || !connected) return;
-    
+
     setIsGeneratingReview(true);
-    
+
     try {
       // Send a prompt to the AI to generate a review
-      const prompt = `Please provide a comprehensive movie review for "${selectedMovie.title}" (${selectedMovie.releaseDate?.split('-')[0]}). 
+      const prompt = `Please provide a comprehensive movie review for "${
+        selectedMovie.title
+      }" (${selectedMovie.releaseDate?.split("-")[0]}). 
       
       Movie Overview: ${selectedMovie.overview}
       Rating: ${selectedMovie.rating}/10
@@ -68,7 +70,7 @@ export function MovieReviewTool() {
       5. Your overall rating and recommendation
       
       Make it engaging and informative, around 200-300 words.`;
-      
+
       client.send({ text: prompt });
     } catch (error) {
       console.error("Failed to generate AI review:", error);
@@ -80,10 +82,12 @@ export function MovieReviewTool() {
   return (
     <div className="movie-review-tool h-full flex">
       {/* Left panel - Movie browser */}
-      <div className="w-1/2 border-r border-gray-600">
-        <div className="p-4 border-b border-gray-600">
-          <h2 className="text-xl font-bold text-white">Movie Browser</h2>
-          <p className="text-gray-400 text-sm">Search and browse movies, then select one to review</p>
+      <div className="w-1/2 border-r border-border">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-xl font-bold text-foreground">Movie Browser</h2>
+          <p className="text-muted-foreground text-sm">
+            Search and browse movies, then select one to review
+          </p>
         </div>
         <div className="h-full overflow-auto">
           <TMDbTool />
@@ -92,12 +96,16 @@ export function MovieReviewTool() {
 
       {/* Right panel - Review section */}
       <div className="w-1/2 flex flex-col">
-        <div className="p-4 border-b border-gray-600">
-          <h2 className="text-xl font-bold text-white">Movie Reviews</h2>
+        <div className="p-4 border-b border-border">
+          <h2 className="text-xl font-bold text-foreground">Movie Reviews</h2>
           {selectedMovie ? (
-            <p className="text-gray-400 text-sm">Reviews for {selectedMovie.title}</p>
+            <p className="text-muted-foreground text-sm">
+              Reviews for {selectedMovie.title}
+            </p>
           ) : (
-            <p className="text-gray-400 text-sm">Select a movie to view and generate reviews</p>
+            <p className="text-muted-foreground text-sm">
+              Select a movie to view and generate reviews
+            </p>
           )}
         </div>
 
@@ -105,7 +113,7 @@ export function MovieReviewTool() {
           {selectedMovie ? (
             <div className="space-y-4">
               {/* Selected Movie Info */}
-              <div className="bg-gray-800 rounded-lg p-4">
+              <div className="bg-card rounded-lg p-4">
                 <div className="flex gap-4">
                   {selectedMovie.posterUrl && (
                     <img
@@ -115,15 +123,23 @@ export function MovieReviewTool() {
                     />
                   )}
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{selectedMovie.title}</h3>
-                    <p className="text-gray-400 text-sm">{selectedMovie.releaseDate?.split('-')[0]}</p>
-                    <p className="text-yellow-400 text-sm">★ {selectedMovie.rating.toFixed(1)}/10</p>
+                    <h3 className="text-lg font-semibold text-foreground">
+                      {selectedMovie.title}
+                    </h3>
+                    <p className="text-muted-foreground text-sm">
+                      {selectedMovie.releaseDate?.split("-")[0]}
+                    </p>
+                    <p className="text-accent text-sm">
+                      ★ {selectedMovie.rating.toFixed(1)}/10
+                    </p>
                     <button
                       onClick={generateAIReview}
                       disabled={isGeneratingReview || !connected}
-                      className="mt-2 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
+                      className="mt-2 px-4 py-2 bg-primary text-primary-foreground rounded hover:opacity-90 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-sm"
                     >
-                      {isGeneratingReview ? "Generating..." : "Generate AI Review"}
+                      {isGeneratingReview
+                        ? "Generating..."
+                        : "Generate AI Review"}
                     </button>
                   </div>
                 </div>
@@ -131,19 +147,23 @@ export function MovieReviewTool() {
 
               {/* Existing Reviews */}
               <div className="space-y-3">
-                <h4 className="text-lg font-semibold text-white">User Reviews</h4>
+                <h4 className="text-lg font-semibold text-foreground">
+                  User Reviews
+                </h4>
                 {reviews.length > 0 ? (
                   reviews.slice(0, 5).map((review) => (
-                    <div key={review.id} className="bg-gray-700 rounded-lg p-4">
+                    <div key={review.id} className="bg-muted rounded-lg p-4">
                       <div className="flex justify-between items-start mb-2">
-                        <span className="font-semibold text-gray-300">{review.author}</span>
+                        <span className="font-semibold text-muted-foreground">
+                          {review.author}
+                        </span>
                         {review.author_details?.rating && (
-                          <span className="text-yellow-400 text-sm">
+                          <span className="text-accent text-sm">
                             ★ {review.author_details.rating}/10
                           </span>
                         )}
                       </div>
-                      <p className="text-gray-400 text-sm leading-relaxed">
+                      <p className="text-muted-foreground text-sm leading-relaxed">
                         {review.content.length > 500
                           ? review.content.substring(0, 500) + "..."
                           : review.content}
@@ -151,16 +171,20 @@ export function MovieReviewTool() {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-500 italic">No user reviews available</p>
+                  <p className="text-muted-foreground italic">
+                    No user reviews available
+                  </p>
                 )}
               </div>
             </div>
           ) : (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center text-gray-500">
+              <div className="text-center text-muted-foreground">
                 <p className="text-lg mb-2">🎬</p>
                 <p>Select a movie from the browser to view reviews</p>
-                <p className="text-sm mt-2">Try asking the AI to search for movies or show popular films</p>
+                <p className="text-sm mt-2">
+                  Try asking the AI to search for movies or show popular films
+                </p>
               </div>
             </div>
           )}

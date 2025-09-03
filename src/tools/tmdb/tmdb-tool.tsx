@@ -380,11 +380,11 @@ export function TMDbTool() {
         {displayData.movieDetails && (
           <div className="max-w-4xl mx-auto">
             {/* Minimal details rendering; card handles list view visuals */}
-            <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-2xl font-bold text-white mb-2">
+            <div className="bg-card rounded-xl p-6">
+              <h2 className="text-2xl font-bold text-foreground mb-2">
                 {displayData.movieDetails.title}
               </h2>
-              <p className="text-gray-300">
+              <p className="text-muted-foreground">
                 {displayData.movieDetails.overview}
               </p>
             </div>

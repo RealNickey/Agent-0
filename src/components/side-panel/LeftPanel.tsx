@@ -44,8 +44,8 @@ export default function LeftPanel() {
   return (
     <div
       className={cn(
-        "bg-neutral-0 flex flex-col h-screen transition-all duration-200 ease-in border-r border-gray-600 text-neutral-90 font-mono text-[13px] font-normal leading-[160%]",
-        open ? "w-[270px]" : "w-[64px]"
+        "bg-neutral-0 flex flex-col h-screen transition-all duration-200 ease-in border-r border-neutral-20 text-neutral-90 font-sans text-[13px] leading-[160%] shadow-sm",
+        open ? "w-[280px]" : "w-[64px]"
       )}
     >
       {/* Header with Logo and Collapse/Expand */}
@@ -102,8 +102,9 @@ export default function LeftPanel() {
             <li>
               <button
                 className={cn(
-                  "w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
-                  active === "tasks" && "text-neutral-90 bg-neutral-20"
+                  "relative group w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
+                  active === "tasks" &&
+                    "text-neutral-90 bg-neutral-10 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                 )}
                 aria-label="Tasks & Reminders"
                 title="Tasks & Reminders"
@@ -115,8 +116,9 @@ export default function LeftPanel() {
             <li>
               <button
                 className={cn(
-                  "w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
-                  active === "notes" && "text-neutral-90 bg-neutral-20"
+                  "relative group w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
+                  active === "notes" &&
+                    "text-neutral-90 bg-neutral-10 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                 )}
                 aria-label="Notes & Journals"
                 title="Notes & Journals"
@@ -128,8 +130,9 @@ export default function LeftPanel() {
             <li>
               <button
                 className={cn(
-                  "w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
-                  active === "focus" && "text-neutral-90 bg-neutral-20"
+                  "relative group w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
+                  active === "focus" &&
+                    "text-neutral-90 bg-neutral-10 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                 )}
                 aria-label="Focus Mode"
                 title="Focus Mode"
@@ -141,8 +144,9 @@ export default function LeftPanel() {
             <li>
               <button
                 className={cn(
-                  "w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
-                  active === "library" && "text-neutral-90 bg-neutral-20"
+                  "relative group w-10 h-9 rounded-md grid place-items-center text-neutral-70 hover:bg-neutral-10",
+                  active === "library" &&
+                    "text-neutral-90 bg-neutral-10 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                 )}
                 aria-label="Library"
                 title="Library"
@@ -162,8 +166,9 @@ export default function LeftPanel() {
               <li>
                 <button
                   className={cn(
-                    "w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
-                    active === "tasks" && "bg-neutral-20 text-neutral-90"
+                    "relative w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
+                    active === "tasks" &&
+                      "bg-neutral-10 text-neutral-90 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                   )}
                   onClick={() => setActive("tasks")}
                   aria-label="Tasks & Reminders"
@@ -175,8 +180,9 @@ export default function LeftPanel() {
               <li>
                 <button
                   className={cn(
-                    "w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
-                    active === "notes" && "bg-neutral-20 text-neutral-90"
+                    "relative w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
+                    active === "notes" &&
+                      "bg-neutral-10 text-neutral-90 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                   )}
                   onClick={() => setActive("notes")}
                   aria-label="Notes & Journals"
@@ -188,8 +194,9 @@ export default function LeftPanel() {
               <li>
                 <button
                   className={cn(
-                    "w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
-                    active === "focus" && "bg-neutral-20 text-neutral-90"
+                    "relative w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
+                    active === "focus" &&
+                      "bg-neutral-10 text-neutral-90 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                   )}
                   onClick={() => setActive("focus")}
                   aria-label="Focus Mode"
@@ -201,8 +208,9 @@ export default function LeftPanel() {
               <li>
                 <button
                   className={cn(
-                    "w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
-                    active === "library" && "bg-neutral-20 text-neutral-90"
+                    "relative w-full flex items-center gap-2 rounded-md px-2 py-2 text-neutral-80 hover:bg-neutral-10",
+                    active === "library" &&
+                      "bg-neutral-10 text-neutral-90 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-5 before:w-1 before:bg-blue-500 before:rounded"
                   )}
                   onClick={() => setActive("library")}
                   aria-label="Library"
@@ -219,11 +227,11 @@ export default function LeftPanel() {
               {history.map((h) => (
                 <li key={h.id}>
                   <button
-                    className="w-full text-left rounded-md px-2 py-2 hover:bg-neutral-10"
+                    className="group w-full text-left rounded-md px-2 py-2 hover:bg-neutral-10 hover:ring-1 hover:ring-neutral-20"
                     title={h.title}
                   >
                     <div className="flex items-center gap-2">
-                      <RiHistoryLine size={16} className="text-neutral-60" />
+                      <RiHistoryLine size={16} className="text-neutral-60 group-hover:text-neutral-80" />
                       <div className="flex-1 min-w-0">
                         <div className="truncate text-[13px] text-neutral-90">{h.title}</div>
                         <div className="text-[11px] text-neutral-60">{h.subtitle}</div>
@@ -238,12 +246,12 @@ export default function LeftPanel() {
       </nav>
 
       {/* Account footer */}
-      <div className="mt-auto relative border-t border-neutral-20">
+  <div className="mt-auto relative border-t border-neutral-20 bg-neutral-0/80">
         {/* Expanded account row */}
         {open ? (
-          <div className="p-2">
+      <div className="p-2">
             <button
-              className="w-full flex items-center gap-2 rounded-md px-2 py-2 hover:bg-neutral-10 text-left"
+        className="w-full flex items-center gap-2 rounded-md px-2 py-2 hover:bg-neutral-10 text-left"
               aria-label="Account menu"
               onClick={() => setAccountOpen((v) => !v)}
             >

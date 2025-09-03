@@ -57,6 +57,8 @@ module.exports = {
         },
       },
       fontFamily: {
+        sans: ["Inter", "sans-serif"],
+        serif: ['"Public Sans"', "serif"],
         mono: ['"Space Mono"', "monospace"],
         "google-sans": ['"Google Sans"', "sans-serif"],
       },

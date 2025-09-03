@@ -74,13 +74,13 @@ export default function SidePanel() {
   return (
     <div
       className={cn(
-        "bg-neutral-0 flex flex-col h-screen transition-all duration-200 ease-in border-r border-gray-600 text-neutral-90 font-mono text-[13px] font-normal leading-[160%]",
+        "bg-sidebar flex flex-col h-screen transition-all duration-200 ease-in border-r border-sidebar-border text-sidebar-foreground font-mono text-[13px] font-normal leading-[160%]",
         open ? "w-[400px]" : "w-[60px]"
       )}
     >
       <header
         className={cn(
-          "flex justify-between items-center border-b border-neutral-20",
+          "flex justify-between items-center border-b border-sidebar-border",
           open
             ? "px-5 py-3 w-[calc(100%-45px)]"
             : "px-2 py-3 w-full justify-center"
@@ -88,7 +88,7 @@ export default function SidePanel() {
       >
         <h2
           className={cn(
-            "text-neutral-90 font-google-sans text-[21px] font-medium leading-4 transition-all duration-200 ease-in",
+            "text-sidebar-foreground font-google-sans text-[21px] font-medium leading-4 transition-all duration-200 ease-in",
             open
               ? "opacity-100 block relative left-0"
               : "opacity-0 hidden -left-full"
@@ -98,14 +98,14 @@ export default function SidePanel() {
         </h2>
         {open ? (
           <button
-            className="h-[30px] transition-transform duration-200 ease-in"
+            className="h-[30px] transition-transform duration-200 ease-in text-muted-foreground hover:bg-sidebar-accent/10 rounded"
             onClick={() => setOpen(false)}
           >
             <RiSidebarFoldLine color="#b4b8bb" />
           </button>
         ) : (
           <button
-            className="h-[30px] transition-transform duration-200 ease-in"
+            className="h-[30px] transition-transform duration-200 ease-in text-muted-foreground hover:bg-sidebar-accent/10 rounded"
             onClick={() => setOpen(true)}
           >
             <RiSidebarUnfoldLine color="#b4b8bb" />
@@ -120,13 +120,13 @@ export default function SidePanel() {
         )}
       >
         <Select
-          className="bg-neutral-20 text-neutral-90 h-[30px] w-[193px]"
+          className="bg-muted text-sidebar-foreground h-[30px] w-[193px]"
           classNamePrefix="react-select"
           styles={{
             control: (baseStyles) => ({
               ...baseStyles,
-              background: "var(--Neutral-15)",
-              color: "var(--Neutral-90)",
+              background: "var(--color-muted)",
+              color: "var(--color-sidebar-foreground)",
               minHeight: "33px",
               maxHeight: "33px",
               border: 0,
@@ -134,19 +134,19 @@ export default function SidePanel() {
             option: (styles, { isFocused, isSelected }) => ({
               ...styles,
               backgroundColor: isFocused
-                ? "var(--Neutral-30)"
+                ? "var(--color-muted)"
                 : isSelected
-                ? "var(--Neutral-20)"
+                ? "var(--color-muted)"
                 : undefined,
             }),
             menu: (styles) => ({
               ...styles,
-              background: "var(--Neutral-20)",
-              color: "var(--Neutral-90)",
+              background: "var(--color-sidebar)",
+              color: "var(--color-sidebar-foreground)",
             }),
             singleValue: (styles) => ({
               ...styles,
-              color: "var(--Neutral-90)",
+              color: "var(--color-sidebar-foreground)",
             }),
           }}
           defaultValue={selectedOption}
@@ -157,8 +157,8 @@ export default function SidePanel() {
         />
         <div
           className={cn(
-            "select-none rounded border border-neutral-20 bg-neutral-10 flex h-[30px] pl-1 justify-center items-center gap-1.5 flex-shrink-0 text-center font-mono text-sm font-normal w-[136px]",
-            connected ? "text-blue-500" : "text-gray-300"
+            "select-none rounded border border-sidebar-border bg-muted flex h-[30px] pl-1 justify-center items-center gap-1.5 flex-shrink-0 text-center font-mono text-sm font-normal w-[136px]",
+            connected ? "text-primary" : "text-muted-foreground"
           )}
         >
           {connected ? "🔵 Streaming" : "⏸️ Paused"}
@@ -179,14 +179,14 @@ export default function SidePanel() {
 
       <div
         className={cn(
-          "h-[50px] flex-grow-0 flex-shrink-0 border-t border-neutral-20 p-[14px_25px] overflow-hidden transition-all duration-200 ease-in",
+          "h-[50px] flex-grow-0 flex-shrink-0 border-t border-sidebar-border p-[14px_25px] overflow-hidden transition-all duration-200 ease-in",
           open ? "opacity-100 block" : "opacity-0 hidden",
           !connected && "pointer-events-none [&>*]:pointer-events-none"
         )}
       >
-        <div className="relative bg-neutral-10 border border-neutral-15 h-[22px] rounded-[10px] p-[11px_18px]">
+        <div className="relative bg-muted border border-border h-[22px] rounded-[10px] p-[11px_18px]">
           <textarea
-            className="bg-transparent text-neutral-90 absolute top-0 left-0 z-[2] inline-block w-[calc(100%-72px)] max-h-5 outline-none flex-1 break-words overflow-auto p-[14px_18px] border-0 resize-none"
+            className="bg-transparent text-sidebar-foreground absolute top-0 left-0 z-[2] inline-block w-[calc(100%-72px)] max-h-5 outline-none flex-1 break-words overflow-auto p-[14px_18px] border-0 resize-none"
             ref={inputRef}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -200,7 +200,7 @@ export default function SidePanel() {
           />
           <span
             className={cn(
-              "absolute left-0 top-0 flex items-center z-[1] h-full w-full pointer-events-none select-none p-[0px_18px] whitespace-pre-wrap",
+              "absolute left-0 top-0 flex items-center z-[1] h-full w-full pointer-events-none select-none p-[0px_18px] whitespace-pre-wrap text-muted-foreground",
               textInput.length ? "hidden" : "block"
             )}
           >
@@ -208,7 +208,7 @@ export default function SidePanel() {
           </span>
 
           <button
-            className="absolute top-1/2 right-0 -translate-y-1/2 bg-transparent border-0 text-neutral-20 cursor-pointer transition-colors duration-100 ease-in z-[2] hover:text-neutral-60 material-symbols-outlined filled"
+            className="absolute top-1/2 right-0 -translate-y-1/2 bg-transparent border-0 text-muted-foreground/60 cursor-pointer transition-colors duration-100 ease-in z-[2] hover:text-muted-foreground material-symbols-outlined filled"
             onClick={handleSubmit}
           >
             send

@@ -35,7 +35,7 @@
   --sidebar-border: rgb(226, 232, 240);
   --sidebar-ring: rgb(109, 142, 197);
   --font-sans: Inter;
-  --font-serif: Lora;
+  --font-serif: Public Sans;
   --font-mono: JetBrains Mono;
   --radius: 0.5rem;
 }
@@ -140,5 +140,15 @@ body {
 }
 body {
   letter-spacing: var(--tracking-normal, 0);
-  font-family: "Space Mono", monospace;
+  font-family: var(--font-sans), sans-serif;
+}
+
+/* Headings use Public Sans for better typography */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-serif), serif;
 }

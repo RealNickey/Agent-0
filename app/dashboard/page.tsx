@@ -49,7 +49,6 @@ export default function DashboardPage() {
     <div className="App bg-background text-foreground">
       <LiveAPIProvider options={apiOptions}>
         <div className="streaming-console flex h-screen w-screen bg-background text-foreground">
-          <SidePanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
             <div className="absolute top-4 right-4 z-10">
               <ThemeToggle />
@@ -107,6 +106,7 @@ export default function DashboardPage() {
               {/* put your own buttons here */}
             </ControlTray>
           </main>
+          <SidePanel />
         </div>
       </LiveAPIProvider>
     </div>

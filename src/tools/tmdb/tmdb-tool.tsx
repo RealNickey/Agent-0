@@ -39,7 +39,8 @@ const movieSearchDeclaration: FunctionDeclaration = {
 
 const movieDetailsDeclaration: FunctionDeclaration = {
   name: "get_movie_details",
-  description: "Get detailed information about a specific movie including cast, crew, and reviews",
+  description:
+    "Get detailed information about a specific movie including cast, crew, and reviews",
   parameters: {
     type: Type.OBJECT,
     properties: {
@@ -115,7 +116,10 @@ interface MovieToolResponse {
 }
 
 // Helper function to make API calls to our Next.js routes
-async function makeAPICall(endpoint: string, params: Record<string, any> = {}): Promise<MovieToolResponse> {
+async function makeAPICall(
+  endpoint: string,
+  params: Record<string, any> = {}
+): Promise<MovieToolResponse> {
   try {
     const url = new URL(endpoint, window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
@@ -129,7 +133,8 @@ async function makeAPICall(endpoint: string, params: Record<string, any> = {}): 
       const errorData = await response.json().catch(() => ({}));
       return {
         success: false,
-        error: errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+        error:
+          errorData.error || `HTTP ${response.status}: ${response.statusText}`,
       };
     }
 
@@ -164,18 +169,32 @@ type UIMovie = {
 };
 
 function mapToUIMovie(apiMovie: any): UIMovie {
-  const year = (apiMovie.releaseDate || apiMovie.release_date || "").split("-")[0] || 0;
+  const year =
+    (apiMovie.releaseDate || apiMovie.release_date || "").split("-")[0] || 0;
   return {
     id: apiMovie.id,
     title: apiMovie.title || "",
     genre: (apiMovie.genres?.[0]?.name as string) || "Movie",
-    rating: typeof apiMovie.rating === "number" ? apiMovie.rating : (apiMovie.vote_average ?? 0),
+    rating:
+      typeof apiMovie.rating === "number"
+        ? apiMovie.rating
+        : apiMovie.vote_average ?? 0,
     duration: apiMovie.runtime ? `${apiMovie.runtime} min` : "",
     year: Number(year) || 0,
-    poster: apiMovie.posterUrl || (apiMovie.poster_path ? `https://image.tmdb.org/t/p/w342${apiMovie.poster_path}` : ""),
-    backdrop: apiMovie.backdropUrl || (apiMovie.backdrop_path ? `https://image.tmdb.org/t/p/w780${apiMovie.backdrop_path}` : ""),
+    poster:
+      apiMovie.posterUrl ||
+      (apiMovie.poster_path
+        ? `https://image.tmdb.org/t/p/w342${apiMovie.poster_path}`
+        : ""),
+    backdrop:
+      apiMovie.backdropUrl ||
+      (apiMovie.backdrop_path
+        ? `https://image.tmdb.org/t/p/w780${apiMovie.backdrop_path}`
+        : ""),
     description: apiMovie.overview || "",
-    director: (apiMovie.credits?.crew?.find((c: any) => c.job === "Director")?.name as string) || "",
+    director:
+      (apiMovie.credits?.crew?.find((c: any) => c.job === "Director")
+        ?.name as string) || "",
   };
 }
 
@@ -188,8 +207,8 @@ export function TMDbTool() {
   const { client, setConfig, setModel } = useLiveAPIContext();
 
   useEffect(() => {
-    setModel("models/gemini-2.0-flash-exp");
-  setConfig({
+    setModel("models/gemini-live-2.5-flash-preview");
+    setConfig({
       responseModalities: [Modality.AUDIO],
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
@@ -197,7 +216,7 @@ export function TMDbTool() {
       systemInstruction: {
         parts: [
           {
-      text: `You’re a general assistant. Only use the movie tools when the user’s request is clearly about movies or films.
+            text: `You’re a general assistant. Only use the movie tools when the user’s request is clearly about movies or films.
 
       If the user asks about movies, you can:
       1) search_movies: find movies by title or keywords
@@ -211,14 +230,14 @@ export function TMDbTool() {
         ],
       },
       tools: [
-        { 
+        {
           functionDeclarations: [
             movieSearchDeclaration,
             movieDetailsDeclaration,
             popularMoviesDeclaration,
             topRatedMoviesDeclaration,
             movieRecommendationsDeclaration,
-          ]
+          ],
         },
       ],
     });
@@ -242,7 +261,11 @@ export function TMDbTool() {
         switch (fc.name) {
           case "search_movies":
             const { query, page = 1, year } = fc.args as any;
-            result = await makeAPICall("/api/movies/search", { q: query, page, year });
+            result = await makeAPICall("/api/movies/search", {
+              q: query,
+              page,
+              year,
+            });
             if (result.success && result.data?.items) {
               setDisplayData({ movies: result.data.items });
             }
@@ -250,29 +273,31 @@ export function TMDbTool() {
 
           case "get_movie_details":
             const { movie_id, include_reviews = true } = fc.args as any;
-            
+
             // Get movie details from TMDb directly via our API or use a details endpoint
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
             let reviewsData = null;
-            
+
             if (include_reviews) {
-              const reviewsResult = await makeAPICall(`/api/movies/${movie_id}/reviews`);
+              const reviewsResult = await makeAPICall(
+                `/api/movies/${movie_id}/reviews`
+              );
               if (reviewsResult.success) {
                 reviewsData = reviewsResult.data?.results || [];
               }
             }
 
             if (detailsResult.success) {
-              setDisplayData({ 
+              setDisplayData({
                 movieDetails: detailsResult.data,
-                reviews: reviewsData 
+                reviews: reviewsData,
               });
               result = {
                 success: true,
                 data: {
                   movie: detailsResult.data,
-                  reviews: reviewsData?.slice(0, 5) // Limit reviews in response
-                }
+                  reviews: reviewsData?.slice(0, 5), // Limit reviews in response
+                },
               };
             } else {
               result = detailsResult;
@@ -281,7 +306,9 @@ export function TMDbTool() {
 
           case "get_popular_movies":
             const { page: popularPage = 1 } = fc.args as any;
-            result = await makeAPICall("/api/movies/popular", { page: popularPage });
+            result = await makeAPICall("/api/movies/popular", {
+              page: popularPage,
+            });
             if (result.success && result.data?.items) {
               setDisplayData({ movies: result.data.items });
             }
@@ -289,7 +316,9 @@ export function TMDbTool() {
 
           case "get_top_rated_movies":
             const { page: topRatedPage = 1 } = fc.args as any;
-            result = await makeAPICall("/api/movies/top-rated", { page: topRatedPage });
+            result = await makeAPICall("/api/movies/top-rated", {
+              page: topRatedPage,
+            });
             if (result.success && result.data?.items) {
               setDisplayData({ movies: result.data.items });
             }
@@ -297,7 +326,10 @@ export function TMDbTool() {
 
           case "get_movie_recommendations":
             const { movie_id: recMovieId, page: recPage = 1 } = fc.args as any;
-            result = await makeAPICall(`/api/movies/${recMovieId}/recommendations`, { page: recPage });
+            result = await makeAPICall(
+              `/api/movies/${recMovieId}/recommendations`,
+              { page: recPage }
+            );
             if (result.success && result.data?.items) {
               setDisplayData({ movies: result.data.items });
             }
@@ -312,8 +344,8 @@ export function TMDbTool() {
 
         responses.push({
           response: { output: result },
-          id: fc.id || '',
-          name: fc.name || '',
+          id: fc.id || "",
+          name: fc.name || "",
         });
       }
 
@@ -335,9 +367,9 @@ export function TMDbTool() {
     <div className="tmdb-tool-container h-full w-full">
       <div className="h-full overflow-auto p-4">
         {/* Only render cards when movies are present; no default browser */}
-    {Array.isArray(displayData.movies) && displayData.movies.length > 0 && (
+        {Array.isArray(displayData.movies) && displayData.movies.length > 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {displayData.movies.slice(0, 6).map((m: any) => {
+            {displayData.movies.slice(0, 6).map((m: any) => {
               const ui = mapToUIMovie(m);
               return <SharedMovieCard key={ui.id} movie={ui} />;
             })}
@@ -349,8 +381,12 @@ export function TMDbTool() {
           <div className="max-w-4xl mx-auto">
             {/* Minimal details rendering; card handles list view visuals */}
             <div className="bg-gray-800 rounded-xl p-6">
-              <h2 className="text-2xl font-bold text-white mb-2">{displayData.movieDetails.title}</h2>
-              <p className="text-gray-300">{displayData.movieDetails.overview}</p>
+              <h2 className="text-2xl font-bold text-white mb-2">
+                {displayData.movieDetails.title}
+              </h2>
+              <p className="text-gray-300">
+                {displayData.movieDetails.overview}
+              </p>
             </div>
           </div>
         )}

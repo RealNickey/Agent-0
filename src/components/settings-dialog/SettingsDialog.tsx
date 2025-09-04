@@ -99,7 +99,8 @@ export default function SettingsDialog() {
         settings
       </button>
       <dialog
-        className={`font-mono bg-neutral-5 rounded-[18px] text-neutral-80 border-0 p-0 m-0 fixed top-[75%] left-1/2 w-[696px] h-[593px] -translate-x-1/2 -translate-y-1/2 z-50 shadow-2xl ${open ? 'block' : 'hidden'}`}
+         className="font-mono bg-neutral-5 rounded-[18px] text-neutral-80 border-0 p-0 m-0 fixed -top-[400px] right-0 w-[696px] h-[593px] -translate-x-1/4 -translate-y-1/2"
+        style={{ display: open ? "block" : "none" }}
       >
         <div
           className={`box-border p-8 max-h-full overflow-y-auto overflow-x-hidden ${

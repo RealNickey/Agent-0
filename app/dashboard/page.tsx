@@ -71,67 +71,39 @@ export default function DashboardPage() {
         <div className="streaming-console flex h-screen w-screen bg-background text-foreground">
           <LeftPanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
-            <div className="absolute top-4 right-4 z-10">
-              <ThemeToggle />
-            </div>
             <div className="z-20">
               <OrbOverlay />
             </div>
 
-            {/* App Toggle Buttons */}
-            <div className="absolute top-4 left-4 z-10 flex gap-2">
-              <button
-                onClick={() => setActiveApp("movies")}
-                className={cn(
-                  "px-4 py-2 rounded text-sm font-medium transition-colors",
-                  activeApp === "movies"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}
-              >
-                🎬 Movie Browser
-              </button>
-              <button
-                onClick={() => setActiveApp("altair")}
-                className={cn(
-                  "px-4 py-2 rounded text-sm font-medium transition-colors",
-                  activeApp === "altair"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                )}
-              >
-                📊 Altair Charts
-              </button>
             {/* Top controls aligned to sidebars */}
-            <div className="w-full h-12 shrink-0 border-b border-neutral-20 bg-card/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm px-3 flex items-center justify-between">
+            <div className="w-full h-12 shrink-0 border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm px-3 flex items-center justify-between">
               {/* Just after left sidebar */}
               <div className="flex gap-2">
                 <button
-                  onClick={() => setActiveApp('movies')}
+                  onClick={() => setActiveApp("movies")}
                   className={cn(
                     "px-3 h-8 rounded text-sm font-medium transition-colors",
-                    activeApp === 'movies'
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    activeApp === "movies"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                   )}
                 >
                   🎬 Movie Browser
                 </button>
                 <button
-                  onClick={() => setActiveApp('altair')}
+                  onClick={() => setActiveApp("altair")}
                   className={cn(
                     "px-3 h-8 rounded text-sm font-medium transition-colors",
-                    activeApp === 'altair'
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                    activeApp === "altair"
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground hover:bg-muted/80"
                   )}
                 >
                   📊 Altair Charts
                 </button>
               </div>
-              {/* Just before right sidebar */}
+              {/* Controls on the right side */}
               <div className="flex items-center gap-2">
-                {/* Integrations and Settings to the left of theme toggle */}
                 <IntegrationsButton />
                 <SettingsDialog />
                 <ThemeToggle />

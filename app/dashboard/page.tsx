@@ -5,6 +5,8 @@ import cn from "classnames";
 import { useRef, useState } from "react";
 import { LiveClientOptions } from "../../src/types";
 import { ThemeToggle } from "../../src/components/ui/theme-toggle";
+import SettingsDialog from "../../src/components/settings-dialog/SettingsDialog";
+import IntegrationsButton from "../../src/components/integrations/IntegrationsButton";
 
 const LiveAPIProvider = dynamic(
   () =>
@@ -83,7 +85,10 @@ export default function DashboardPage() {
                 </button>
               </div>
               {/* Just before right sidebar */}
-              <div>
+              <div className="flex items-center gap-2">
+                {/* Integrations and Settings to the left of theme toggle */}
+                <IntegrationsButton />
+                <SettingsDialog />
                 <ThemeToggle />
               </div>
             </div>
@@ -109,7 +114,7 @@ export default function DashboardPage() {
               videoRef={videoRef}
               supportsVideo={true}
               onVideoStreamChange={setVideoStream}
-              enableEditingSettings={true}
+              enableEditingSettings={false}
             >
               {/* put your own buttons here */}
             </ControlTray>

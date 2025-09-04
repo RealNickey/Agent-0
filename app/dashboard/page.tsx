@@ -10,6 +10,7 @@ const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
 });
 import SettingsDialog from "../../src/components/settings-dialog/SettingsDialog";
 import IntegrationsButton from "../../src/components/integrations/IntegrationsButton";
+import ChatInputBar from "../../src/components/chat-input/ChatInputBar";
 
 const LiveAPIProvider = dynamic(
   () =>
@@ -52,7 +53,7 @@ export default function DashboardPage() {
     const { connected } = useLiveAPIContext();
     return (
       <div className="absolute inset-0 pointer-events-none z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+        <div className="absolute top-[40%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
           <VoiceOrb active={connected} size="250px" />
         </div>
       </div>
@@ -127,13 +128,16 @@ export default function DashboardPage() {
               />
             </div>
 
+            {/* Chat style input bar */}
+            <ChatInputBar />
+
             <ControlTray
               videoRef={videoRef}
               supportsVideo={true}
               onVideoStreamChange={setVideoStream}
               enableEditingSettings={false}
             >
-              {/* put your own buttons here */}
+              {/* custom buttons can go here */}
             </ControlTray>
           </main>
           <SidePanel />

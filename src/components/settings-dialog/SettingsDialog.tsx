@@ -99,11 +99,11 @@ export default function SettingsDialog() {
         settings
       </button>
       <dialog
-        className="font-mono bg-neutral-5 rounded-[18px] text-neutral-80 border-0 p-0 m-0 fixed -top-[400px] right-0 w-[696px] h-[593px] -translate-x-1/4 -translate-y-1/2"
+        className="font-sans bg-slate-900 border-2 border-blue-500 rounded-[18px] text-slate-100 shadow-2xl shadow-blue-500/20 p-0 m-0 fixed bottom-[140px] right-0 w-[696px] h-[593px] -translate-x-1/4"
         style={{ display: open ? "block" : "none" }}
       >
         <div
-          className={`box-border p-8 max-h-full overflow-y-auto overflow-x-hidden ${
+          className={`box-border p-8 max-h-full overflow-y-auto overflow-x-hidden bg-slate-800 text-slate-100 rounded-[16px] m-1 ${
             connected ? "italic" : ""
           }`}
         >
@@ -120,24 +120,25 @@ export default function SettingsDialog() {
             <VoiceSelector />
           </div>
 
-          <h3>System Instructions</h3>
+          <h3 className="text-blue-300 font-bold text-lg mb-3">System Instructions</h3>
           <textarea
-            className="rounded-[12px] bg-neutral-15 text-neutral-80 mt-2 font-google-sans leading-[21px] text-base w-[calc(100%-16px)] min-h-[150px] h-[150px] p-2 border-0 resize-y box-border"
+            className="rounded-[12px] bg-slate-700 text-slate-100 border-2 border-slate-600 mt-2 font-sans leading-[21px] text-base w-[calc(100%-16px)] min-h-[150px] h-[150px] p-3 resize-y box-border focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 placeholder-slate-400"
             onChange={updateConfig}
             value={systemInstruction}
+            placeholder="Enter system instructions..."
           />
-          <h4 className="ml-1 mb-[10px]">Function declarations</h4>
+          <h4 className="ml-1 mb-[10px] text-blue-300 font-bold text-md">Function declarations</h4>
           <div className="text-[66%] w-full">
             <div className="grid grid-cols-[1fr_0.5fr_1.5fr] gap-y-1.5">
               {functionDeclarations.map((fd, fdKey) => (
                 <div
-                  className="contents text-neutral-70 items-center h-[35px]"
+                  className="contents text-slate-300 items-center h-[35px]"
                   key={`function-${fdKey}`}
                 >
-                  <span className="font-mono text-xs font-bold text-blue-400 rounded-lg border border-neutral-20 p-[10px]">
+                  <span className="font-sans text-xs font-bold text-emerald-400 rounded-lg border-2 border-emerald-500 bg-slate-700 p-[10px]">
                     {fd.name}
                   </span>
-                  <span className="p-3 [&>*:not(:last-child)]:after:content-[',_']">
+                  <span className="p-3 text-slate-400 [&>*:not(:last-child)]:after:content-[',_']">
                     {Object.keys(fd.parameters?.properties || {}).map(
                       (item, k) => (
                         <span key={k}>{item}</span>
@@ -146,7 +147,7 @@ export default function SettingsDialog() {
                   </span>
                   <input
                     key={`fd-${fd.description}`}
-                    className="flex-1 bg-transparent border-none text-inherit text-inherit p-[2px_4px] hover:bg-neutral-20 focus:bg-neutral-20 focus:outline-none"
+                    className="flex-1 bg-slate-700 border-2 border-slate-600 rounded text-slate-100 p-[4px_8px] hover:bg-slate-600 hover:border-slate-500 focus:bg-slate-600 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
                     type="text"
                     defaultValue={fd.description}
                     onBlur={(e) =>

@@ -5,6 +5,9 @@ import cn from "classnames";
 import { useRef, useState } from "react";
 import { LiveClientOptions } from "../../src/types";
 import { ThemeToggle } from "../../src/components/ui/theme-toggle";
+const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
+  ssr: false,
+});
 
 const LiveAPIProvider = dynamic(
   () =>
@@ -29,19 +32,30 @@ const Altair = dynamic(
     })),
   { ssr: false }
 );
-const TMDbMovieBrowser = dynamic(
-  () => import("../../src/tools/tmdb"),
-  { ssr: false }
-);
+const TMDbMovieBrowser = dynamic(() => import("../../src/tools/tmdb"), {
+  ssr: false,
+});
 const ControlTray = dynamic(
   () => import("../../src/components/control-tray/ControlTray"),
   { ssr: false }
 );
+import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
 
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
-  const [activeApp, setActiveApp] = useState<'movies' | 'altair'>('movies');
+  const [activeApp, setActiveApp] = useState<"movies" | "altair">("movies");
+  // Overlay that consumes context under the provider
+  const OrbOverlay = () => {
+    const { connected } = useLiveAPIContext();
+    return (
+      <div className="absolute inset-0 pointer-events-none z-50">
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+          <VoiceOrb active={connected} size="250px" />
+        </div>
+      </div>
+    );
+  };
 
   const API_KEY =
     typeof window !== "undefined"
@@ -58,37 +72,40 @@ export default function DashboardPage() {
             <div className="absolute top-4 right-4 z-10">
               <ThemeToggle />
             </div>
-            
+            <div className="z-20">
+              <OrbOverlay />
+            </div>
+
             {/* App Toggle Buttons */}
             <div className="absolute top-4 left-4 z-10 flex gap-2">
               <button
-                onClick={() => setActiveApp('movies')}
+                onClick={() => setActiveApp("movies")}
                 className={cn(
                   "px-4 py-2 rounded text-sm font-medium transition-colors",
-                  activeApp === 'movies' 
-                    ? "bg-blue-600 text-white" 
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  activeApp === "movies"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
                 🎬 Movie Browser
               </button>
               <button
-                onClick={() => setActiveApp('altair')}
+                onClick={() => setActiveApp("altair")}
                 className={cn(
                   "px-4 py-2 rounded text-sm font-medium transition-colors",
-                  activeApp === 'altair' 
-                    ? "bg-blue-600 text-white" 
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  activeApp === "altair"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
                 )}
               >
                 📊 Altair Charts
               </button>
             </div>
-            
+
             <div className="main-app-area flex flex-1 items-center justify-center w-full">
               {/* Conditional App Rendering */}
-              {activeApp === 'movies' && <TMDbMovieBrowser />}
-              {activeApp === 'altair' && <Altair />}
+              {activeApp === "movies" && <TMDbMovieBrowser />}
+              {activeApp === "altair" && <Altair />}
               <video
                 className={cn(
                   "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",

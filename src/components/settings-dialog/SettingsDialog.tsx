@@ -9,13 +9,20 @@ import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import VoiceSelector from "./VoiceSelector";
 import ResponseModalitySelector from "./ResponseModalitySelector";
 import { FunctionDeclaration, LiveConnectConfig, Tool } from "@google/genai";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 type FunctionDeclarationsTool = Tool & {
   functionDeclarations: FunctionDeclaration[];
 };
 
 export default function SettingsDialog() {
-  const [open, setOpen] = useState(false);
   const { config, setConfig, connected } = useLiveAPIContext();
   const functionDeclarations: FunctionDeclaration[] = useMemo(() => {
     if (!Array.isArray(config.tools)) {
@@ -91,24 +98,25 @@ export default function SettingsDialog() {
   );
 
   return (
-    <div className="flex items-center justify-center gap-1 h-[70px]">
-      <button
-        className="flex items-center justify-center bg-neutral-20 text-neutral-60 text-xl leading-7 lowercase cursor-pointer animate-opacity-pulse transition-all duration-200 ease-in-out w-12 h-12 rounded-[18px] border border-transparent select-none focus:border-2 focus:border-neutral-20 focus:outline focus:outline-2 focus:outline-neutral-80 hover:bg-transparent hover:border-neutral-20 material-symbols-outlined bg-transparent border-0"
-        onClick={() => setOpen(!open)}
-      >
-        settings
-      </button>
-      <dialog
-        className="font-sans bg-slate-900 border-2 border-blue-500 rounded-[18px] text-slate-100 shadow-2xl shadow-blue-500/20 p-0 m-0 fixed bottom-[140px] right-0 w-[696px] h-[593px] -translate-x-1/4"
-        style={{ display: open ? "block" : "none" }}
-      >
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon">
+          <span className="material-symbols-outlined">settings</span>
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="font-sans bg-card border-border rounded-lg text-card-foreground shadow-lg p-6 w-full max-w-[95vw] sm:max-w-3xl lg:max-w-[1200px]">
+        <DialogHeader>
+          <DialogTitle className="text-accent-blue-headers font-bold text-lg">
+            Settings
+          </DialogTitle>
+        </DialogHeader>
         <div
-          className={`box-border p-8 max-h-full overflow-y-auto overflow-x-hidden bg-slate-800 text-slate-100 rounded-[16px] m-1 ${
+          className={`box-border max-h-full overflow-y-auto overflow-x-hidden ${
             connected ? "italic" : ""
           }`}
         >
           {connected && (
-            <div className="italic">
+            <div className="italic mb-4">
               <p>
                 These settings can only be applied before connecting and will
                 override other settings.
@@ -120,25 +128,29 @@ export default function SettingsDialog() {
             <VoiceSelector />
           </div>
 
-          <h3 className="text-blue-300 font-bold text-lg mb-3">System Instructions</h3>
+          <h3 className="text-accent-blue-headers font-bold text-lg mb-3 mt-4">
+            System Instructions
+          </h3>
           <textarea
-            className="rounded-[12px] bg-slate-700 text-slate-100 border-2 border-slate-600 mt-2 font-sans leading-[21px] text-base w-[calc(100%-16px)] min-h-[150px] h-[150px] p-3 resize-y box-border focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 placeholder-slate-400"
+            className="rounded-lg bg-muted text-muted-foreground border-border border mt-2 font-sans leading-normal text-base w-full min-h-[150px] p-3 resize-y box-border focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring placeholder-muted-foreground"
             onChange={updateConfig}
             value={systemInstruction}
             placeholder="Enter system instructions..."
           />
-          <h4 className="ml-1 mb-[10px] text-blue-300 font-bold text-md">Function declarations</h4>
-          <div className="text-[66%] w-full">
-            <div className="grid grid-cols-[1fr_0.5fr_1.5fr] gap-y-1.5">
+          <h4 className="ml-1 mb-2 text-accent-blue-headers font-bold text-md mt-4">
+            Function declarations
+          </h4>
+          <div className="text-sm w-full">
+            <div className="grid grid-cols-[1fr_0.5fr_1.5fr] gap-y-2">
               {functionDeclarations.map((fd, fdKey) => (
                 <div
-                  className="contents text-slate-300 items-center h-[35px]"
+                  className="contents text-muted-foreground items-center"
                   key={`function-${fdKey}`}
                 >
-                  <span className="font-sans text-xs font-bold text-emerald-400 rounded-lg border-2 border-emerald-500 bg-slate-700 p-[10px]">
+                  <span className="font-sans text-xs font-bold text-accent-green rounded-md border border-green-700 bg-muted p-2">
                     {fd.name}
                   </span>
-                  <span className="p-3 text-slate-400 [&>*:not(:last-child)]:after:content-[',_']">
+                  <span className="p-2 text-muted-foreground [&>*:not(:last-child)]:after:content-[',_']">
                     {Object.keys(fd.parameters?.properties || {}).map(
                       (item, k) => (
                         <span key={k}>{item}</span>
@@ -147,7 +159,7 @@ export default function SettingsDialog() {
                   </span>
                   <input
                     key={`fd-${fd.description}`}
-                    className="flex-1 bg-slate-700 border-2 border-slate-600 rounded text-slate-100 p-[4px_8px] hover:bg-slate-600 hover:border-slate-500 focus:bg-slate-600 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    className="flex-1 bg-muted border border-border rounded text-card-foreground p-2 hover:bg-neutral-80 focus:bg-neutral-80 focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring"
                     type="text"
                     defaultValue={fd.description}
                     onBlur={(e) =>
@@ -159,7 +171,7 @@ export default function SettingsDialog() {
             </div>
           </div>
         </div>
-      </dialog>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

@@ -10,7 +10,15 @@ const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
 });
 import SettingsDialog from "../../src/components/settings-dialog/SettingsDialog";
 import IntegrationsButton from "../../src/components/integrations/IntegrationsButton";
-import ChatInputBar from "../../src/components/chat-input/ChatInputBar";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputToolbar,
+  PromptInputTools,
+  PromptInputButton,
+  PromptInputSubmit,
+} from "../../src/components/ai-elements/prompt-input";
+import { PlusIcon, SearchIcon } from "lucide-react";
 
 const LiveAPIProvider = dynamic(
   () =>
@@ -128,8 +136,7 @@ export default function DashboardPage() {
               />
             </div>
 
-            {/* Chat style input bar */}
-            <ChatInputBar />
+            {/* Chat input using PromptInput */}
 
             <ControlTray
               videoRef={videoRef}
@@ -137,7 +144,39 @@ export default function DashboardPage() {
               onVideoStreamChange={setVideoStream}
               enableEditingSettings={false}
             >
-              {/* custom buttons can go here */}
+              {/* prompt input field: inline tools inside box with submit at far right */}
+              <PromptInput className="w-[720px] max-w-[80vw]">
+                <div className="flex items-center gap-2 px-2 py-2">
+                  {/* left tool buttons inside input */}
+                  <div className="flex items-center gap-1 self-center">
+                    <PromptInputButton
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                    >
+                      <PlusIcon className="h-5 w-5" />
+                    </PromptInputButton>
+                    <PromptInputButton
+                      variant="ghost"
+                      size="icon"
+                      className="h-10 w-10"
+                    >
+                      <SearchIcon className="h-5 w-5" />
+                    </PromptInputButton>
+                  </div>
+                  {/* textarea should be slightly shorter than buttons and shrink smoothly */}
+                  <div className="flex-1">
+                    <PromptInputTextarea
+                      placeholder="Type a message..."
+                      className="min-h-[32px]"
+                      minHeight={32}
+                      maxHeight={80}
+                    />
+                  </div>
+                  {/* send button aligned at far right */}
+                  <PromptInputSubmit size="icon" className="h-10 w-10" />
+                </div>
+              </PromptInput>
             </ControlTray>
           </main>
           <SidePanel />

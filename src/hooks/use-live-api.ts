@@ -45,6 +45,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const [connected, setConnected] = useState(false);
   const [volume, setVolume] = useState(0);
 
+  // Audio pipeline monitoring
+  const lastAudioTimeRef = useRef<number>(Date.now());
+  const audioHealthCheckInterval = useRef<number | null>(null);
+
   // register audio for streaming server -> speakers
   useEffect(() => {
     if (!audioStreamerRef.current) {
@@ -56,7 +60,16 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
           })
           .then(() => {
             // Successfully added worklet
+          })
+          .catch((error) => {
+            console.error("Failed to add VU meter worklet:", error);
+            // Attempt to recreate audio streamer on worklet failure
+            setTimeout(() => {
+              audioStreamerRef.current = null;
+            }, 1000);
           });
+      }).catch((error) => {
+        console.error("Failed to create audio context:", error);
       });
     }
   }, [audioStreamerRef]);
@@ -64,20 +77,31 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   useEffect(() => {
     const onOpen = () => {
       setConnected(true);
+      // Start audio pipeline monitoring when connected
+      startAudioHealthCheck();
     };
 
     const onClose = () => {
       setConnected(false);
+      // Stop audio pipeline monitoring when disconnected
+      stopAudioHealthCheck();
     };
 
     const onError = (error: ErrorEvent) => {
       console.error("error", error);
+      // Try to validate session and reconnect if needed
+      if (!client.validateSession()) {
+        console.log("Session validation failed, connection may be unresponsive");
+      }
     };
 
     const stopAudioStreamer = () => audioStreamerRef.current?.stop();
 
-    const onAudio = (data: ArrayBuffer) =>
+    const onAudio = (data: ArrayBuffer) => {
+      // Update last audio received time for health monitoring
+      lastAudioTimeRef.current = Date.now();
       audioStreamerRef.current?.addPCM16(new Uint8Array(data));
+    };
 
     client
       .on("error", onError)
@@ -94,8 +118,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         .off("interrupted", stopAudioStreamer)
         .off("audio", onAudio)
         .disconnect();
+      
+      stopAudioHealthCheck();
     };
-  }, [client]);
+  }, [client, startAudioHealthCheck, stopAudioHealthCheck]);
 
   const connect = useCallback(async () => {
     if (!config) {
@@ -108,7 +134,51 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   const disconnect = useCallback(async () => {
     client.disconnect();
     setConnected(false);
+    stopAudioHealthCheck();
   }, [setConnected, client]);
+
+  // Audio pipeline health monitoring functions
+  const startAudioHealthCheck = useCallback(() => {
+    if (audioHealthCheckInterval.current) {
+      stopAudioHealthCheck();
+    }
+
+    lastAudioTimeRef.current = Date.now();
+    
+    audioHealthCheckInterval.current = window.setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastAudio = now - lastAudioTimeRef.current;
+      
+      // If we haven't received audio in a while during an active conversation,
+      // this might indicate audio pipeline issues
+      if (timeSinceLastAudio > 60000 && connected) { // 60 seconds
+        console.warn("Audio pipeline may be disconnected - no audio received recently");
+        
+        // Try to validate session
+        if (!client.validateSession()) {
+          console.log("Session validation failed during audio health check");
+        }
+        
+        // Try to recreate audio streamer as a recovery mechanism
+        if (audioStreamerRef.current) {
+          try {
+            audioStreamerRef.current.stop();
+            audioStreamerRef.current = null;
+            // The useEffect will recreate it
+          } catch (error) {
+            console.error("Error during audio streamer recovery:", error);
+          }
+        }
+      }
+    }, 30000); // Check every 30 seconds
+  }, [connected, client]);
+
+  const stopAudioHealthCheck = useCallback(() => {
+    if (audioHealthCheckInterval.current) {
+      clearInterval(audioHealthCheckInterval.current);
+      audioHealthCheckInterval.current = null;
+    }
+  }, []);
 
   return {
     client,

@@ -89,6 +89,16 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
   protected config: LiveConnectConfig | null = null;
 
+  // Health checking properties
+  private healthCheckInterval: number | null = null;
+  private lastPingTime: number = 0;
+  private pingTimeoutId: number | null = null;
+  private readonly PING_INTERVAL = 30000; // 30 seconds
+  private readonly PING_TIMEOUT = 10000; // 10 seconds
+  private reconnectAttempts: number = 0;
+  private readonly MAX_RECONNECT_ATTEMPTS = 3;
+  private reconnectTimeoutId: number | null = null;
+
   public getConfig() {
     return { ...this.config };
   }
@@ -101,6 +111,8 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     this.onerror = this.onerror.bind(this);
     this.onclose = this.onclose.bind(this);
     this.onmessage = this.onmessage.bind(this);
+    this.startHealthCheck = this.startHealthCheck.bind(this);
+    this.stopHealthCheck = this.stopHealthCheck.bind(this);
   }
 
   protected log(type: string, message: StreamingLog["message"]) {
@@ -120,6 +132,7 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     this._status = "connecting";
     this.config = config;
     this._model = model;
+    this.reconnectAttempts = 0;
 
     const callbacks: LiveCallbacks = {
       onopen: this.onopen,
@@ -137,10 +150,12 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     } catch (e) {
       console.error("Error connecting to GenAI Live:", e);
       this._status = "disconnected";
+      this.scheduleReconnect();
       return false;
     }
 
     this._status = "connected";
+    this.startHealthCheck();
     return true;
   }
 
@@ -148,6 +163,9 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     if (!this.session) {
       return false;
     }
+    
+    this.stopHealthCheck();
+    this.clearReconnectTimeout();
     this.session?.close();
     this._session = null;
     this._status = "disconnected";
@@ -158,23 +176,42 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
   protected onopen() {
     this.log("client.open", "Connected");
+    this.reconnectAttempts = 0;
     this.emit("open");
   }
 
   protected onerror(e: ErrorEvent) {
     this.log("server.error", e.message);
     this.emit("error", e);
+    
+    // Enhanced error handling - attempt reconnection on connection errors
+    if (this._status === "connected") {
+      this.log("client.reconnect", "Connection error detected, attempting recovery");
+      this.scheduleReconnect();
+    }
   }
 
   protected onclose(e: CloseEvent) {
+    this.stopHealthCheck();
+    this._status = "disconnected";
+    
     this.log(
       `server.close`,
       `disconnected ${e.reason ? `with reason: ${e.reason}` : ``}`
     );
     this.emit("close", e);
+    
+    // Attempt reconnection unless it was an intentional disconnect
+    if (e.code !== 1000 && this.config && this._model) {
+      this.log("client.reconnect", "Unexpected disconnect, attempting reconnection");
+      this.scheduleReconnect();
+    }
   }
 
   protected async onmessage(message: LiveServerMessage) {
+    // Reset ping timer on any message received
+    this.lastPingTime = Date.now();
+    
     if (message.setupComplete) {
       this.log("server.send", "setupComplete");
       this.emit("setupcomplete");
@@ -293,5 +330,142 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
       turns: Array.isArray(parts) ? parts : [parts],
       turnComplete,
     });
+  }
+
+  /**
+   * Start health checking to detect unresponsive connections
+   */
+  private startHealthCheck() {
+    if (this.healthCheckInterval) {
+      this.stopHealthCheck();
+    }
+
+    this.lastPingTime = Date.now();
+    
+    this.healthCheckInterval = window.setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastMessage = now - this.lastPingTime;
+      
+      // If we haven't received any message in the ping interval, check connection health
+      if (timeSinceLastMessage > this.PING_INTERVAL) {
+        this.checkConnectionHealth();
+      }
+    }, this.PING_INTERVAL);
+  }
+
+  /**
+   * Stop health checking
+   */
+  private stopHealthCheck() {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+    if (this.pingTimeoutId) {
+      clearTimeout(this.pingTimeoutId);
+      this.pingTimeoutId = null;
+    }
+  }
+
+  /**
+   * Check connection health by sending a ping-like message
+   */
+  private checkConnectionHealth() {
+    if (this._status !== "connected" || !this.session) {
+      return;
+    }
+
+    // Send a minimal message to test connection responsiveness
+    try {
+      this.session.sendClientContent({ 
+        turns: [{ text: "" }], 
+        turnComplete: false 
+      });
+      
+      this.log("client.ping", "Health check sent");
+      
+      // Set timeout to detect if server doesn't respond
+      this.pingTimeoutId = window.setTimeout(() => {
+        this.log("client.ping", "Health check timeout - connection appears unresponsive");
+        this.handleUnresponsiveConnection();
+      }, this.PING_TIMEOUT);
+      
+    } catch (error) {
+      this.log("client.ping", `Health check failed: ${error}`);
+      this.handleUnresponsiveConnection();
+    }
+  }
+
+  /**
+   * Handle unresponsive connection by attempting reconnection
+   */
+  private handleUnresponsiveConnection() {
+    this.log("client.reconnect", "Connection unresponsive, attempting reconnection");
+    this.disconnect();
+    this.scheduleReconnect();
+  }
+
+  /**
+   * Schedule a reconnection attempt with exponential backoff
+   */
+  private scheduleReconnect() {
+    if (this.reconnectAttempts >= this.MAX_RECONNECT_ATTEMPTS) {
+      this.log("client.reconnect", "Max reconnection attempts reached");
+      return;
+    }
+
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+    }
+
+    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
+    this.reconnectAttempts++;
+
+    this.log("client.reconnect", `Scheduling reconnection attempt ${this.reconnectAttempts} in ${delay}ms`);
+
+    this.reconnectTimeoutId = window.setTimeout(async () => {
+      if (this.config && this._model && this._status === "disconnected") {
+        this.log("client.reconnect", `Attempting reconnection ${this.reconnectAttempts}/${this.MAX_RECONNECT_ATTEMPTS}`);
+        const success = await this.connect(this._model, this.config);
+        
+        if (!success) {
+          this.log("client.reconnect", "Reconnection failed, scheduling next attempt");
+          this.scheduleReconnect();
+        } else {
+          this.log("client.reconnect", "Reconnection successful");
+        }
+      }
+    }, delay);
+  }
+
+  /**
+   * Clear any pending reconnection timeout
+   */
+  private clearReconnectTimeout() {
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+    this.reconnectAttempts = 0;
+  }
+
+  /**
+   * Validate that the session is still active and responsive
+   */
+  public validateSession(): boolean {
+    if (!this.session || this._status !== "connected") {
+      return false;
+    }
+
+    // Check if we've received any messages recently
+    const now = Date.now();
+    const timeSinceLastMessage = now - this.lastPingTime;
+    
+    if (timeSinceLastMessage > this.PING_INTERVAL * 2) {
+      this.log("client.session", "Session appears inactive");
+      return false;
+    }
+
+    return true;
   }
 }

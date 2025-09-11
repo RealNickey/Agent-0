@@ -16,6 +16,7 @@
 import { useEffect, useRef, useState, memo } from "react";
 import vegaEmbed from "vega-embed";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
+import { useUIContext } from "../../contexts/UIContext";
 import {
   FunctionDeclaration,
   LiveServerToolCall,
@@ -42,6 +43,7 @@ const declaration: FunctionDeclaration = {
 function AltairComponent() {
   const [jsonString, setJSONString] = useState<string>("");
   const { client, setConfig, setModel } = useLiveAPIContext();
+  const { setCanvasMode } = useUIContext();
 
   useEffect(() => {
     setModel("models/gemini-live-2.5-flash-preview");
@@ -107,6 +109,12 @@ function AltairComponent() {
       vegaEmbed(embedRef.current, JSON.parse(jsonString));
     }
   }, [embedRef, jsonString]);
+
+  useEffect(() => {
+    setCanvasMode(!!jsonString);
+  }, [jsonString, setCanvasMode]);
+
+  useEffect(() => () => setCanvasMode(false), [setCanvasMode]);
   return <div className="vega-embed" ref={embedRef} />;
 }
 

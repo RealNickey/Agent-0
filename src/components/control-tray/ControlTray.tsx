@@ -167,7 +167,7 @@ function ControlTray({
   };
 
   return (
-    <section className="absolute bottom-0 left-1/2 -translate-x-1/2 inline-flex justify-center items-start gap-2 pb-6">
+  <section className="fixed bottom-6 left-1/2 -translate-x-1/2 inline-flex justify-center items-start gap-2 z-[1000] pointer-events-auto">
       <canvas style={{ display: "none" }} ref={renderCanvasRef} />
       <nav
         className={cn(

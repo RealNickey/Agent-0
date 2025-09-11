@@ -5,6 +5,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
+import { useUIContext } from "../../contexts/UIContext";
 import {
   FunctionDeclaration,
   LiveServerToolCall,
@@ -205,6 +206,19 @@ export function TMDbTool() {
     reviews?: any[];
   }>({});
   const { client, setConfig, setModel } = useLiveAPIContext();
+  const { setCanvasMode } = useUIContext();
+
+  useEffect(() => {
+    // Turn on canvas mode when there is content to show; off when none
+    const hasContent =
+      (displayData.movies && displayData.movies.length > 0) ||
+      !!displayData.movieDetails;
+    setCanvasMode(!!hasContent);
+  }, [displayData, setCanvasMode]);
+
+  useEffect(() => {
+    return () => setCanvasMode(false);
+  }, [setCanvasMode]);
 
   useEffect(() => {
     setModel("models/gemini-live-2.5-flash-preview");
@@ -365,10 +379,10 @@ export function TMDbTool() {
 
   return (
     <div className="tmdb-tool-container h-full w-full">
-      <div className="h-full overflow-auto p-4">
+      <div className="h-full overflow-auto p-4 md:p-6">
         {/* Only render cards when movies are present; no default browser */}
         {Array.isArray(displayData.movies) && displayData.movies.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-6">
             {displayData.movies.slice(0, 6).map((m: any) => {
               const ui = mapToUIMovie(m);
               return <SharedMovieCard key={ui.id} movie={ui} />;

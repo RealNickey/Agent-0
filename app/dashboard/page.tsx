@@ -42,6 +42,7 @@ const ControlTray = dynamic(
   { ssr: false }
 );
 import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
+import { UIProvider, useUIContext } from "../../src/contexts/UIContext";
 
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -49,10 +50,18 @@ export default function DashboardPage() {
   const [activeApp, setActiveApp] = useState<"movies" | "altair">("movies");
   // Overlay that consumes context under the provider
   const OrbOverlay = () => {
+    const { canvasMode } = useUIContext();
     const { connected } = useLiveAPIContext();
     return (
       <div className="absolute inset-0 pointer-events-none z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+        <div
+          className={cn(
+            "absolute top-1/2 -translate-y-1/2 z-10 pointer-events-none transition-all duration-500 ease-out",
+            canvasMode
+              ? "left-[18%] -translate-x-1/2" // move left but not too much
+              : "left-1/2 -translate-x-1/2"
+          )}
+        >
           <VoiceOrb active={connected} size="250px" />
         </div>
       </div>
@@ -68,10 +77,11 @@ export default function DashboardPage() {
   return (
     <div className="App bg-background text-foreground">
       <LiveAPIProvider options={apiOptions}>
+        <UIProvider>
         <div className="streaming-console flex h-screen w-screen bg-background text-foreground">
           <LeftPanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
-            <div className="z-20">
+            <div className="z-10">
               <OrbOverlay />
             </div>
 
@@ -110,10 +120,15 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="main-app-area flex flex-1 items-center justify-center w-full">
-              {/* Conditional App Rendering */}
-              {activeApp === "movies" && <TMDbMovieBrowser />}
-              {activeApp === "altair" && <Altair />}
+            <div className="main-app-area relative flex flex-1 items-stretch justify-center w-full">
+              {/* Canvas/tool area on the right that doesn't exceed bounds */}
+              <div className="relative z-0 flex-1 flex items-center justify-center pointer-events-auto">
+                {/* Tools mount here; they should be responsive and constrained */}
+                <div className="w-full max-w-[1100px] px-4 md:px-6 lg:px-8">
+                  {activeApp === "movies" && <TMDbMovieBrowser />}
+                  {activeApp === "altair" && <Altair />}
+                </div>
+              </div>
               <video
                 className={cn(
                   "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",
@@ -138,6 +153,7 @@ export default function DashboardPage() {
           </main>
           <SidePanel />
         </div>
+        </UIProvider>
       </LiveAPIProvider>
     </div>
   );

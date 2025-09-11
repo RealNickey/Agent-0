@@ -74,6 +74,49 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     }
   }, [audioStreamerRef]);
 
+  // Audio pipeline health monitoring functions
+  const stopAudioHealthCheck = useCallback(() => {
+    if (audioHealthCheckInterval.current) {
+      clearInterval(audioHealthCheckInterval.current);
+      audioHealthCheckInterval.current = null;
+    }
+  }, []);
+
+  const startAudioHealthCheck = useCallback(() => {
+    if (audioHealthCheckInterval.current) {
+      stopAudioHealthCheck();
+    }
+
+    lastAudioTimeRef.current = Date.now();
+    
+    audioHealthCheckInterval.current = window.setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastAudio = now - lastAudioTimeRef.current;
+      
+      // If we haven't received audio in a while during an active conversation,
+      // this might indicate audio pipeline issues
+      if (timeSinceLastAudio > 60000 && connected) { // 60 seconds
+        console.warn("Audio pipeline may be disconnected - no audio received recently");
+        
+        // Try to validate session
+        if (!client.validateSession()) {
+          console.log("Session validation failed during audio health check");
+        }
+        
+        // Try to recreate audio streamer as a recovery mechanism
+        if (audioStreamerRef.current) {
+          try {
+            audioStreamerRef.current.stop();
+            audioStreamerRef.current = null;
+            // The useEffect will recreate it
+          } catch (error) {
+            console.error("Error during audio streamer recovery:", error);
+          }
+        }
+      }
+    }, 30000); // Check every 30 seconds
+  }, [connected, client, stopAudioHealthCheck]);
+
   useEffect(() => {
     const onOpen = () => {
       setConnected(true);
@@ -135,50 +178,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     client.disconnect();
     setConnected(false);
     stopAudioHealthCheck();
-  }, [setConnected, client]);
-
-  // Audio pipeline health monitoring functions
-  const startAudioHealthCheck = useCallback(() => {
-    if (audioHealthCheckInterval.current) {
-      stopAudioHealthCheck();
-    }
-
-    lastAudioTimeRef.current = Date.now();
-    
-    audioHealthCheckInterval.current = window.setInterval(() => {
-      const now = Date.now();
-      const timeSinceLastAudio = now - lastAudioTimeRef.current;
-      
-      // If we haven't received audio in a while during an active conversation,
-      // this might indicate audio pipeline issues
-      if (timeSinceLastAudio > 60000 && connected) { // 60 seconds
-        console.warn("Audio pipeline may be disconnected - no audio received recently");
-        
-        // Try to validate session
-        if (!client.validateSession()) {
-          console.log("Session validation failed during audio health check");
-        }
-        
-        // Try to recreate audio streamer as a recovery mechanism
-        if (audioStreamerRef.current) {
-          try {
-            audioStreamerRef.current.stop();
-            audioStreamerRef.current = null;
-            // The useEffect will recreate it
-          } catch (error) {
-            console.error("Error during audio streamer recovery:", error);
-          }
-        }
-      }
-    }, 30000); // Check every 30 seconds
-  }, [connected, client]);
-
-  const stopAudioHealthCheck = useCallback(() => {
-    if (audioHealthCheckInterval.current) {
-      clearInterval(audioHealthCheckInterval.current);
-      audioHealthCheckInterval.current = null;
-    }
-  }, []);
+  }, [setConnected, client, stopAudioHealthCheck]);
 
   return {
     client,

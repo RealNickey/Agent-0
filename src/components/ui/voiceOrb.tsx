@@ -239,47 +239,9 @@ const VoiceInteractiveSiriOrb: React.FC<VoiceOrbProps> = ({
   const [animationDuration] = useState(20);
   const [isListening, setIsListening] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const [recognition, setRecognition] = useState<any>(null);
-  const [transcript, setTranscript] = useState("");
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
-
-  // Settings UI removed; defaults used for a clean embed
-
-  // Initialize speech recognition
-  useEffect(() => {
-    if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
-      const SpeechRecognition = (window as any).webkitSpeechRecognition;
-      const recognitionInstance = new SpeechRecognition();
-      recognitionInstance.continuous = true;
-      recognitionInstance.interimResults = true;
-      recognitionInstance.lang = "en-US";
-
-      recognitionInstance.onresult = (event: any) => {
-        let finalTranscript = "";
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          if (event.results[i].isFinal) {
-            finalTranscript += event.results[i][0].transcript;
-          }
-        }
-        if (finalTranscript) {
-          setTranscript(finalTranscript);
-        }
-      };
-
-      recognitionInstance.onerror = (event: any) => {
-        console.error("Speech recognition error:", event.error);
-        setIsListening(false);
-      };
-
-      recognitionInstance.onend = () => {
-        setIsListening(false);
-      };
-
-      setRecognition(recognitionInstance);
-    }
-  }, []);
 
   // Audio level monitoring
   const startAudioMonitoring = async () => {
@@ -325,37 +287,28 @@ const VoiceInteractiveSiriOrb: React.FC<VoiceOrbProps> = ({
     setAudioLevel(0);
   };
 
-  // Sync listening state with external active prop
+  // Sync listening state with external active prop (no transcription)
   useEffect(() => {
-    if (!recognition) return;
-    if (active && !isListening) {
-      try {
-        recognition.start();
-        startAudioMonitoring();
-        setIsListening(true);
-        setTranscript("");
-      } catch (e) {
-        // noop: recognition may already be started
+    let cancelled = false;
+    const startIfNeeded = async () => {
+      if (active && !isListening) {
+        await startAudioMonitoring();
+        if (!cancelled) setIsListening(true);
       }
-    }
-    if (!active && isListening) {
-      try {
-        recognition.stop();
-      } catch (e) {
-        // ignore
+      if (!active && isListening) {
+        stopAudioMonitoring();
+        if (!cancelled) setIsListening(false);
       }
-      stopAudioMonitoring();
-      setIsListening(false);
-    }
+    };
+    startIfNeeded();
     // Cleanup on unmount
     return () => {
-      try {
-        recognition.stop();
-      } catch {}
+      cancelled = true;
       stopAudioMonitoring();
+      setIsListening(false);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active, recognition]);
+  }, [active]);
 
   return (
     <div className="flex flex-col items-center gap-6 text-foreground">
@@ -369,13 +322,6 @@ const VoiceInteractiveSiriOrb: React.FC<VoiceOrbProps> = ({
         />
 
         <div className="flex flex-col items-center gap-3">
-          {transcript && (
-            <div className="max-w-md p-4 bg-background/80 backdrop-blur-sm border border-border rounded-lg shadow-lg">
-              <p className="text-sm text-muted-foreground mb-1">You said:</p>
-              <p className="text-foreground">{transcript}</p>
-            </div>
-          )}
-
           {isListening && (
             <div className="text-sm text-muted-foreground animate-pulse">
               Listening... Speak now

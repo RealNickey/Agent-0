@@ -1,9 +1,4 @@
-/**
- * Simplified Movie Browser Component
- * Core functionality: search, popular movies, movie details
- */
-
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import {
   FunctionDeclaration,
@@ -12,58 +7,54 @@ import {
   Type,
 } from "@google/genai";
 
-// Essential tool declarations
-const movieSearchDeclaration: FunctionDeclaration = {
-  name: "search_movies",
-  description: "Search for movies by title or keywords",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      query: {
-        type: Type.STRING,
-        description: "The movie title or search query",
+// Tool declarations for movie functionality
+const movieToolDeclarations: FunctionDeclaration[] = [
+  {
+    name: "search_movies",
+    description: "Search for movies by title or keywords",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        query: {
+          type: Type.STRING,
+          description: "Movie title or search query",
+        },
+        page: {
+          type: Type.NUMBER,
+          description: "Page number (default: 1)",
+          default: 1,
+        },
       },
-      page: {
-        type: Type.NUMBER,
-        description: "Page number for pagination (default: 1)",
-        default: 1,
-      },
+      required: ["query"],
     },
-    required: ["query"],
   },
-};
-
-const movieDetailsDeclaration: FunctionDeclaration = {
-  name: "get_movie_details",
-  description: "Get detailed information about a specific movie",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      movie_id: {
-        type: Type.NUMBER,
-        description: "The TMDb movie ID",
+  {
+    name: "get_movie_details",
+    description: "Get detailed information about a specific movie",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        movie_id: { type: Type.NUMBER, description: "The TMDb movie ID" },
       },
+      required: ["movie_id"],
     },
-    required: ["movie_id"],
   },
-};
-
-const popularMoviesDeclaration: FunctionDeclaration = {
-  name: "get_popular_movies",
-  description: "Get currently popular movies",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      page: {
-        type: Type.NUMBER,
-        description: "Page number for pagination (default: 1)",
-        default: 1,
+  {
+    name: "get_popular_movies",
+    description: "Get currently popular movies",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        page: {
+          type: Type.NUMBER,
+          description: "Page number (default: 1)",
+          default: 1,
+        },
       },
     },
   },
-};
+];
 
-// Types
 interface Movie {
   id: number;
   title: string;
@@ -80,8 +71,18 @@ interface MovieDetails extends Movie {
   vote_count?: number;
 }
 
-// Helper function for API calls
+// Client-side caching for better performance
+const apiCache = new Map<string, { data: any; timestamp: number }>();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 async function makeAPICall(endpoint: string, params: Record<string, any> = {}) {
+  const cacheKey = `${endpoint}?${new URLSearchParams(params).toString()}`;
+  const cached = apiCache.get(cacheKey);
+
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    return cached.data;
+  }
+
   try {
     const url = new URL(endpoint, window.location.origin);
     Object.entries(params).forEach(([key, value]) => {
@@ -92,13 +93,12 @@ async function makeAPICall(endpoint: string, params: Record<string, any> = {}) {
 
     const response = await fetch(url.toString());
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(
-        errorData.error || `HTTP ${response.status}: ${response.statusText}`
-      );
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    apiCache.set(cacheKey, { data, timestamp: Date.now() });
+    return data;
   } catch (error) {
     console.error("API call failed:", error);
     throw error;
@@ -106,7 +106,7 @@ async function makeAPICall(endpoint: string, params: Record<string, any> = {}) {
 }
 
 // Movie Card Component
-function MovieCard({
+const MovieCard = React.memo(function MovieCard({
   movie,
   onSelect,
   isSelected,
@@ -117,7 +117,7 @@ function MovieCard({
 }) {
   return (
     <div
-      className={`movie-card bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-all duration-200 hover:scale-105 hover:shadow-lg ${
+      className={`bg-gray-800 rounded-lg overflow-hidden cursor-pointer transition-transform duration-200 hover:scale-105 ${
         isSelected ? "ring-2 ring-blue-500" : ""
       }`}
       onClick={() => onSelect(movie)}
@@ -127,6 +127,7 @@ function MovieCard({
           src={movie.posterUrl}
           alt={movie.title}
           className="w-full h-64 object-cover"
+          loading="lazy"
         />
       )}
       <div className="p-3">
@@ -140,38 +141,40 @@ function MovieCard({
       </div>
     </div>
   );
-}
+});
+
+MovieCard.displayName = "MovieCard";
 
 // Movie Details Component
-function MovieDetails({ movie }: { movie: MovieDetails }) {
+const MovieDetailsView = React.memo(function MovieDetailsView({
+  movie,
+}: {
+  movie: MovieDetails;
+}) {
   return (
-    <div className="movie-details bg-gray-800 rounded-lg p-6">
+    <div className="bg-gray-800 rounded-lg p-6">
       <div className="flex gap-6">
         {movie.posterUrl && (
           <img
             src={movie.posterUrl}
             alt={movie.title}
             className="w-48 h-72 object-cover rounded-lg flex-shrink-0"
+            loading="lazy"
           />
         )}
         <div className="flex-1">
           <h2 className="text-3xl font-bold text-white mb-3">{movie.title}</h2>
           <div className="text-sm text-gray-400 mb-4 space-y-1">
             <p>
-              <strong>Release Date:</strong> {movie.releaseDate}
+              <strong>Release:</strong> {movie.releaseDate}
             </p>
             <p>
-              <strong>Rating:</strong> {movie.rating}/10 ({movie.vote_count}{" "}
-              votes)
+              <strong>Rating:</strong> {movie.rating}/10{" "}
+              {movie.vote_count && `(${movie.vote_count} votes)`}
             </p>
             {movie.runtime && (
               <p>
-                <strong>Runtime:</strong> {movie.runtime} minutes
-              </p>
-            )}
-            {movie.status && (
-              <p>
-                <strong>Status:</strong> {movie.status}
+                <strong>Runtime:</strong> {movie.runtime} min
               </p>
             )}
           </div>
@@ -180,20 +183,21 @@ function MovieDetails({ movie }: { movie: MovieDetails }) {
       </div>
     </div>
   );
-}
+});
+
+MovieDetailsView.displayName = "MovieDetailsView";
 
 // Main Movie Browser Component
-export function MovieBrowser() {
+export default function MovieBrowser() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<MovieDetails | null>(null);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<"grid" | "details">("grid");
   const { client, setConfig, setModel } = useLiveAPIContext();
 
-  // Initialize AI configuration
-  useEffect(() => {
-    setModel("models/gemini-live-2.5-flash-preview");
-    setConfig({
+  // Configuration for the AI assistant
+  const config = useMemo(
+    () => ({
       responseModalities: [Modality.AUDIO],
       speechConfig: {
         voiceConfig: { prebuiltVoiceConfig: { voiceName: "Aoede" } },
@@ -201,132 +205,140 @@ export function MovieBrowser() {
       systemInstruction: {
         parts: [
           {
-            text: `You are a helpful movie assistant. You can:
-            
-            1. Search for movies by title or keywords using search_movies
-            2. Get detailed movie information using get_movie_details  
-            3. Show popular movies using get_popular_movies
-            
-            When users ask about movies, use the appropriate tools to help them find and learn about films. Keep responses conversational and helpful.`,
+            text: `You are a movie assistant. Use the available tools to help users find and learn about films.`,
           },
         ],
       },
-      tools: [
-        {
-          functionDeclarations: [
-            movieSearchDeclaration,
-            movieDetailsDeclaration,
-            popularMoviesDeclaration,
-          ],
-        },
-      ],
-    });
-  }, [setConfig, setModel]);
+      tools: [{ functionDeclarations: movieToolDeclarations }],
+    }),
+    []
+  );
 
-  // Load popular movies on initial load
+  // Initialize AI configuration
   useEffect(() => {
-    loadPopularMovies();
-  }, []);
+    setModel("models/gemini-live-2.5-flash-preview");
+    setConfig(config);
+  }, [setConfig, setModel, config]);
 
-  const loadPopularMovies = async () => {
-    setLoading(true);
-    try {
-      const data = await makeAPICall("/api/movies/popular");
-      setMovies(data.items || []);
-    } catch (error) {
-      console.error("Failed to load popular movies:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Load popular movies on first mount
+  useEffect(() => {
+    let mounted = true;
 
-  const handleMovieSelect = async (movie: Movie) => {
-    setLoading(true);
-    try {
-      const details = await makeAPICall(`/api/movies/${movie.id}`);
-      setSelectedMovie(details);
-      setView("details");
-    } catch (error) {
-      console.error("Failed to load movie details:", error);
-      // Fallback to basic movie info
-      setSelectedMovie(movie as MovieDetails);
-      setView("details");
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadPopular = async () => {
+      if (movies.length > 0) return;
 
-  // Handle AI tool calls
+      setLoading(true);
+      try {
+        const data = await makeAPICall("/api/movies/popular");
+        if (mounted) {
+          setMovies(data.items || []);
+        }
+      } catch (error) {
+        console.error("Failed to load popular movies:", error);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    loadPopular();
+    return () => {
+      mounted = false;
+    };
+  }, [movies.length]);
+
+  // Handle movie selection
+  const handleMovieSelect = useCallback(
+    async (movie: Movie) => {
+      if (selectedMovie?.id === movie.id) {
+        setView("details");
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const details = await makeAPICall(`/api/movies/${movie.id}`);
+        setSelectedMovie(details);
+        setView("details");
+      } catch (error) {
+        console.error("Failed to load movie details:", error);
+        setSelectedMovie(movie as MovieDetails);
+        setView("details");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [selectedMovie?.id]
+  );
+
+  // Handle tool calls from AI
   useEffect(() => {
     const onToolCall = async (toolCall: LiveServerToolCall) => {
       if (!toolCall.functionCalls) return;
 
-      const responses: Array<{
-        response: { output: any };
-        id: string;
-        name: string;
-      }> = [];
+      const responses = await Promise.all(
+        toolCall.functionCalls.map(async (fc) => {
+          let result;
+          try {
+            switch (fc.name) {
+              case "search_movies":
+                const { query, page = 1 } = fc.args as any;
+                const searchData = await makeAPICall("/api/movies/search", {
+                  q: query,
+                  page,
+                });
+                setMovies(searchData.items || []);
+                setView("grid");
+                result = {
+                  success: true,
+                  count: searchData.items?.length || 0,
+                };
+                break;
 
-      for (const fc of toolCall.functionCalls) {
-        let result;
+              case "get_movie_details":
+                const { movie_id } = fc.args as any;
+                const detailsData = await makeAPICall(
+                  `/api/movies/${movie_id}`
+                );
+                setSelectedMovie(detailsData);
+                setView("details");
+                result = { success: true, movie: detailsData.title };
+                break;
 
-        try {
-          switch (fc.name) {
-            case "search_movies":
-              const { query, page = 1 } = fc.args as any;
-              const searchData = await makeAPICall("/api/movies/search", {
-                q: query,
-                page,
-              });
-              setMovies(searchData.items || []);
-              setView("grid");
-              result = { success: true, data: searchData };
-              break;
+              case "get_popular_movies":
+                const { page: popularPage = 1 } = fc.args as any;
+                const popularData = await makeAPICall("/api/movies/popular", {
+                  page: popularPage,
+                });
+                setMovies(popularData.items || []);
+                setView("grid");
+                result = {
+                  success: true,
+                  count: popularData.items?.length || 0,
+                };
+                break;
 
-            case "get_movie_details":
-              const { movie_id } = fc.args as any;
-              const detailsData = await makeAPICall(`/api/movies/${movie_id}`);
-              setSelectedMovie(detailsData);
-              setView("details");
-              result = { success: true, data: detailsData };
-              break;
-
-            case "get_popular_movies":
-              const { page: popularPage = 1 } = fc.args as any;
-              const popularData = await makeAPICall("/api/movies/popular", {
-                page: popularPage,
-              });
-              setMovies(popularData.items || []);
-              setView("grid");
-              result = { success: true, data: popularData };
-              break;
-
-            default:
-              result = {
-                success: false,
-                error: `Unknown function: ${fc.name}`,
-              };
+              default:
+                result = {
+                  success: false,
+                  error: `Unknown function: ${fc.name}`,
+                };
+            }
+          } catch (error) {
+            result = {
+              success: false,
+              error: error instanceof Error ? error.message : "Unknown error",
+            };
           }
-        } catch (error) {
-          result = {
-            success: false,
-            error: error instanceof Error ? error.message : "Unknown error",
+
+          return {
+            response: { output: result },
+            id: fc.id || "",
+            name: fc.name || "",
           };
-        }
+        })
+      );
 
-        responses.push({
-          response: { output: result },
-          id: fc.id || "",
-          name: fc.name || "",
-        });
-      }
-
-      // Send responses back to AI
-      setTimeout(() => {
-        client.sendToolResponse({
-          functionResponses: responses,
-        });
-      }, 100);
+      client.sendToolResponse({ functionResponses: responses });
     };
 
     client.on("toolcall", onToolCall);
@@ -334,6 +346,20 @@ export function MovieBrowser() {
       client.off("toolcall", onToolCall);
     };
   }, [client]);
+
+  const handleViewChange = useCallback(
+    (newView: "grid" | "details") => {
+      if (newView === "grid" && movies.length === 0) {
+        setLoading(true);
+        makeAPICall("/api/movies/popular")
+          .then((data) => setMovies(data.items || []))
+          .catch(console.error)
+          .finally(() => setLoading(false));
+      }
+      setView(newView);
+    },
+    [movies.length]
+  );
 
   return (
     <div className="movie-browser h-full w-full bg-gray-900 text-white">
@@ -343,34 +369,31 @@ export function MovieBrowser() {
           <h1 className="text-2xl font-bold">Movie Browser</h1>
           <div className="flex gap-2">
             <button
-              onClick={() => {
-                setView("grid");
-                loadPopularMovies();
-              }}
+              onClick={() => handleViewChange("grid")}
               className={`px-4 py-2 rounded text-sm transition-colors ${
                 view === "grid"
-                  ? "bg-blue-600 text-white"
+                  ? "bg-blue-600"
                   : "bg-gray-700 hover:bg-gray-600"
               }`}
             >
-              Browse Movies
+              Browse
             </button>
             {selectedMovie && (
               <button
-                onClick={() => setView("details")}
+                onClick={() => handleViewChange("details")}
                 className={`px-4 py-2 rounded text-sm transition-colors ${
                   view === "details"
-                    ? "bg-blue-600 text-white"
+                    ? "bg-blue-600"
                     : "bg-gray-700 hover:bg-gray-600"
                 }`}
               >
-                Movie Details
+                Details
               </button>
             )}
           </div>
         </div>
         <p className="text-gray-400 text-sm mt-1">
-          Ask the AI to search for movies or browse popular films
+          Ask AI to search movies or browse popular films
         </p>
       </div>
 
@@ -396,21 +419,16 @@ export function MovieBrowser() {
         )}
 
         {!loading && view === "details" && selectedMovie && (
-          <MovieDetails movie={selectedMovie} />
+          <MovieDetailsView movie={selectedMovie} />
         )}
 
         {!loading && view === "grid" && movies.length === 0 && (
           <div className="text-center text-gray-500 mt-16">
             <p className="text-lg mb-2">🎬</p>
-            <p>
-              No movies found. Try asking the AI to search for movies or show
-              popular films.
-            </p>
+            <p>Ask AI to search for movies or browse popular films.</p>
           </div>
         )}
       </div>
     </div>
   );
 }
-
-export default MovieBrowser;

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // --- Voice Interactive Siri Orb Component ---
 interface SiriOrbProps {
@@ -16,6 +16,7 @@ interface SiriOrbProps {
   animationDuration?: number;
   isListening?: boolean;
   audioLevel?: number;
+  isSleeping?: boolean;
 }
 
 const SiriOrb: React.FC<SiriOrbProps> = ({
@@ -25,6 +26,7 @@ const SiriOrb: React.FC<SiriOrbProps> = ({
   animationDuration = 20,
   isListening = false,
   audioLevel = 0,
+  isSleeping = false,
 }) => {
   const [isBlinking, setIsBlinking] = useState(false);
 
@@ -57,7 +59,8 @@ const SiriOrb: React.FC<SiriOrbProps> = ({
 
   // Voice reactive scaling
   const voiceScale = isListening ? 1 + audioLevel * 0.3 : 1;
-  const eyeScale = isBlinking ? 0.1 : 1;
+  // Close eyes completely while sleeping; otherwise blink
+  const eyeScale = isSleeping ? 0.05 : isBlinking ? 0.1 : 1;
 
   return (
     <div
@@ -104,6 +107,29 @@ const SiriOrb: React.FC<SiriOrbProps> = ({
               }}
             />
           </div>
+        </div>
+      </div>
+
+      {/* Sleeping ZZZ Animation (top-right) with smooth fade-out */}
+      <div
+        className="sleeping-overlay z-20"
+        style={{
+          position: "absolute",
+          top: `-${sizeValue * 0.5}px`,
+          right: `-${sizeValue * 0.12}px`,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          transform: `rotate(20deg) translateY(${isSleeping ? 0 : -8}px)`,
+          opacity: isSleeping ? 1 : 0,
+          transition: "opacity 320ms ease, transform 320ms ease",
+          pointerEvents: "none",
+        }}
+      >
+        <div className="zzz-container" style={{ alignItems: "flex-end" }}>
+          <span className="zzz-text zzz-1">Z</span>
+          <span className="zzz-text zzz-2">Z</span>
+          <span className="zzz-text zzz-3">Z</span>
         </div>
       </div>
 
@@ -214,6 +240,46 @@ const SiriOrb: React.FC<SiriOrbProps> = ({
           }
         }
 
+        /* Sleeping ZZZ Animation */
+        .sleeping-overlay {
+          z-index: 20;
+        }
+        .zzz-container {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+        }
+        .zzz-text {
+          font-size: 24px;
+          font-weight: bold;
+          color: rgba(255, 255, 255, 0.8);
+          text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+          animation: zzz-float 2s infinite ease-in-out;
+        }
+        .zzz-1 {
+          animation-delay: 0s;
+        }
+        .zzz-2 {
+          animation-delay: 0.3s;
+        }
+        .zzz-3 {
+          animation-delay: 0.6s;
+        }
+        @keyframes zzz-float {
+          0%,
+          100% {
+            transform: translateY(0) scale(1);
+            opacity: 0.4;
+          }
+          50% {
+            transform: translateY(-15px) scale(1.2);
+            opacity: 1;
+          }
+        }
+
+        /* Thinking animation removed */
+
         @media (prefers-reduced-motion: reduce) {
           .orb-container::before {
             animation: none;
@@ -224,111 +290,57 @@ const SiriOrb: React.FC<SiriOrbProps> = ({
   );
 };
 
-// --- Voice Interactive Demo ---
+// --- Voice Interactive Demo (Integrated) ---
+import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
+
 type VoiceOrbProps = {
-  active?: boolean;
   size?: string;
 };
 
 const VoiceInteractiveSiriOrb: React.FC<VoiceOrbProps> = ({
-  active = false,
   size = "256px",
 }) => {
-  // Default sizing and animation without settings UI
   const [selectedSize] = useState<string>(size);
   const [animationDuration] = useState(20);
-  const [isListening, setIsListening] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const { connected, connect, disconnect, volume } = useLiveAPIContext();
 
-  // Audio level monitoring
-  const startAudioMonitoring = async () => {
+  // Manual connect: removed auto-connect to avoid unexpected permission prompts.
+  // Connection is now toggled by clicking the orb.
+  const toggleConnected = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      audioContextRef.current = new AudioContext();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      microphoneRef.current =
-        audioContextRef.current.createMediaStreamSource(stream);
-
-      microphoneRef.current.connect(analyserRef.current);
-      analyserRef.current.fftSize = 256;
-
-      const bufferLength = analyserRef.current.frequencyBinCount;
-      const dataArray = new Uint8Array(bufferLength);
-
-      const updateAudioLevel = () => {
-        if (analyserRef.current && isListening) {
-          analyserRef.current.getByteFrequencyData(dataArray);
-          const average = dataArray.reduce((a, b) => a + b) / bufferLength;
-          setAudioLevel(average / 255);
-          requestAnimationFrame(updateAudioLevel);
-        }
-      };
-
-      updateAudioLevel();
-    } catch (error) {
-      console.error("Error accessing microphone:", error);
-    }
-  };
-
-  const stopAudioMonitoring = () => {
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
-      audioContextRef.current = null;
-    }
-    if (analyserRef.current) {
-      analyserRef.current = null;
-    }
-    if (microphoneRef.current) {
-      microphoneRef.current = null;
-    }
-    setAudioLevel(0);
-  };
-
-  // Sync listening state with external active prop (no transcription)
-  useEffect(() => {
-    let cancelled = false;
-    const startIfNeeded = async () => {
-      if (active && !isListening) {
-        await startAudioMonitoring();
-        if (!cancelled) setIsListening(true);
+      if (connected) {
+        await disconnect();
+      } else {
+        await connect();
       }
-      if (!active && isListening) {
-        stopAudioMonitoring();
-        if (!cancelled) setIsListening(false);
-      }
-    };
-    startIfNeeded();
-    // Cleanup on unmount
-    return () => {
-      cancelled = true;
-      stopAudioMonitoring();
-      setIsListening(false);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [active]);
+    } catch (e) {
+      console.error("Toggle connect failed", e);
+    }
+  }, [connected, connect, disconnect]);
+
+  // Determine orb states (thinking removed):
+  // - sleeping when not connected
+  // - listening whenever connected; audioLevel still reflects volume for visuals
+  const isSleeping = !connected;
+  const isListening = connected;
+  const audioLevel = volume;
 
   return (
-    <div className="flex flex-col items-center gap-6 text-foreground">
-      <div className="flex flex-col items-center gap-6">
-        <SiriOrb
-          size={selectedSize}
-          animationDuration={animationDuration}
-          className="drop-shadow-2xl"
-          isListening={isListening}
-          audioLevel={audioLevel}
-        />
-
-        <div className="flex flex-col items-center gap-3">
-          {isListening && (
-            <div className="text-sm text-muted-foreground animate-pulse">
-              Listening... Speak now
-            </div>
-          )}
-        </div>
-      </div>
+    <div
+      className="flex flex-col items-center"
+      onClick={toggleConnected}
+      role="button"
+      title={connected ? "Disconnect voice" : "Connect voice"}
+      style={{ cursor: "pointer" }}
+    >
+      <SiriOrb
+        size={selectedSize}
+        animationDuration={animationDuration}
+        className="drop-shadow-2xl"
+        isSleeping={isSleeping}
+        isListening={isListening}
+        audioLevel={audioLevel}
+      />
     </div>
   );
 };

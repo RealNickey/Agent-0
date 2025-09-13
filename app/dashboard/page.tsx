@@ -49,11 +49,10 @@ export default function DashboardPage() {
   const [activeApp, setActiveApp] = useState<"movies" | "altair">("movies");
   // Overlay that consumes context under the provider
   const OrbOverlay = () => {
-    const { connected } = useLiveAPIContext();
     return (
       <div className="absolute inset-0 pointer-events-none z-50">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
-          <VoiceOrb active={connected} size="250px" />
+          <VoiceOrb size="250px" />
         </div>
       </div>
     );

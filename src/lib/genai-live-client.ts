@@ -374,6 +374,19 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   }
 
   /**
+   * Explicitly signal end of current audio stream segment (for VAD pauses)
+   * Sends an audioStreamEnd event so the server can flush buffered audio.
+   */
+  endAudioStream() {
+    try {
+      this.session?.sendRealtimeInput({ audioStreamEnd: true });
+      this.log("client.realtimeInput", "audioStreamEnd");
+    } catch (e) {
+      this.log("client.realtimeInput", `audioStreamEnd failed: ${e}`);
+    }
+  }
+
+  /**
    *  send a response to a function call and provide the id of the functions you are responding to
    */
   sendToolResponse(toolResponse: LiveClientToolResponse) {

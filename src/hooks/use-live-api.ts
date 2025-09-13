@@ -52,25 +52,27 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   // register audio for streaming server -> speakers
   useEffect(() => {
     if (!audioStreamerRef.current) {
-      audioContext({ id: "audio-out" }).then((audioCtx: AudioContext) => {
-        audioStreamerRef.current = new AudioStreamer(audioCtx);
-        audioStreamerRef.current
-          .addWorklet<any>("vumeter-out", VolMeterWorket, (ev: any) => {
-            setVolume(ev.data.volume);
-          })
-          .then(() => {
-            // Successfully added worklet
-          })
-          .catch((error) => {
-            console.error("Failed to add VU meter worklet:", error);
-            // Attempt to recreate audio streamer on worklet failure
-            setTimeout(() => {
-              audioStreamerRef.current = null;
-            }, 1000);
-          });
-      }).catch((error) => {
-        console.error("Failed to create audio context:", error);
-      });
+      audioContext({ id: "audio-out" })
+        .then((audioCtx: AudioContext) => {
+          audioStreamerRef.current = new AudioStreamer(audioCtx);
+          audioStreamerRef.current
+            .addWorklet<any>("vumeter-out", VolMeterWorket, (ev: any) => {
+              setVolume(ev.data.volume);
+            })
+            .then(() => {
+              // Successfully added worklet
+            })
+            .catch((error) => {
+              console.error("Failed to add VU meter worklet:", error);
+              // Attempt to recreate audio streamer on worklet failure
+              setTimeout(() => {
+                audioStreamerRef.current = null;
+              }, 1000);
+            });
+        })
+        .catch((error) => {
+          console.error("Failed to create audio context:", error);
+        });
     }
   }, [audioStreamerRef]);
 
@@ -88,21 +90,24 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     }
 
     lastAudioTimeRef.current = Date.now();
-    
+
     audioHealthCheckInterval.current = window.setInterval(() => {
       const now = Date.now();
       const timeSinceLastAudio = now - lastAudioTimeRef.current;
-      
+
       // If we haven't received audio in a while during an active conversation,
       // this might indicate audio pipeline issues
-      if (timeSinceLastAudio > 60000 && connected) { // 60 seconds
-        console.warn("Audio pipeline may be disconnected - no audio received recently");
-        
+      if (timeSinceLastAudio > 60000 && connected) {
+        // 60 seconds
+        console.warn(
+          "Audio pipeline may be disconnected - no audio received recently"
+        );
+
         // Try to validate session
         if (!client.validateSession()) {
           console.log("Session validation failed during audio health check");
         }
-        
+
         // Try to recreate audio streamer as a recovery mechanism
         if (audioStreamerRef.current) {
           try {
@@ -134,7 +139,9 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       console.error("error", error);
       // Try to validate session and reconnect if needed
       if (!client.validateSession()) {
-        console.log("Session validation failed, connection may be unresponsive");
+        console.log(
+          "Session validation failed, connection may be unresponsive"
+        );
       }
     };
 
@@ -146,12 +153,28 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       audioStreamerRef.current?.addPCM16(new Uint8Array(data));
     };
 
+    // New event handlers for enhanced functionality
+    const onFileData = (fileUri: string) => {
+      console.log("File data received:", fileUri);
+    };
+
+    const onExecutableCode = (code: any) => {
+      console.log("Executable code received:", code);
+    };
+
+    const onCodeExecutionResult = (result: any) => {
+      console.log("Code execution result:", result);
+    };
+
     client
       .on("error", onError)
       .on("open", onOpen)
       .on("close", onClose)
       .on("interrupted", stopAudioStreamer)
-      .on("audio", onAudio);
+      .on("audio", onAudio)
+      .on("filedata", onFileData)
+      .on("executablecode", onExecutableCode)
+      .on("codeexecutionresult", onCodeExecutionResult);
 
     return () => {
       client
@@ -160,8 +183,11 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         .off("close", onClose)
         .off("interrupted", stopAudioStreamer)
         .off("audio", onAudio)
+        .off("filedata", onFileData)
+        .off("executablecode", onExecutableCode)
+        .off("codeexecutionresult", onCodeExecutionResult)
         .disconnect();
-      
+
       stopAudioHealthCheck();
     };
   }, [client, startAudioHealthCheck, stopAudioHealthCheck]);

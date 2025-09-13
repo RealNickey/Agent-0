@@ -26,6 +26,7 @@ import {
   LiveServerToolCallCancellation,
   Part,
   Session,
+  TurnCoverage,
 } from "@google/genai";
 
 import { EventEmitter } from "eventemitter3";
@@ -116,6 +117,9 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
   // Audio collection for WAV conversion
   private audioParts: string[] = [];
+
+  // Response queue for message handling
+  private responseQueue: LiveServerMessage[] = [];
 
   public getConfig() {
     return { ...this.config };
@@ -235,6 +239,9 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   protected async onmessage(message: LiveServerMessage) {
     // Reset ping timer on any message received
     this.lastPingTime = Date.now();
+
+    // Add message to response queue for advanced processing
+    this.addToResponseQueue(message);
 
     if (message.setupComplete) {
       this.log("server.send", "setupComplete");
@@ -406,6 +413,26 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
       this.log("client.toolResponse", `Error sending tool response: ${error}`);
       return false;
     }
+  }
+
+  /**
+   * Create tool responses from tool call in the pattern shown in reference implementation
+   */
+  createToolResponsesFromCall(
+    toolCall: LiveServerToolCall,
+    responseData: any = { response: "Tool response handled by client" }
+  ): Array<{ id: string; name: string; response: any }> {
+    if (!toolCall.functionCalls) {
+      return [];
+    }
+
+    return toolCall.functionCalls
+      .filter((functionCall) => functionCall.id && functionCall.name)
+      .map((functionCall) => ({
+        id: functionCall.id!,
+        name: functionCall.name!,
+        response: responseData,
+      }));
   }
 
   /**
@@ -598,6 +625,50 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   }
 
   /**
+   * Add message to response queue for processing
+   */
+  public addToResponseQueue(message: LiveServerMessage): void {
+    this.responseQueue.push(message);
+  }
+
+  /**
+   * Wait for a message from the response queue (similar to reference implementation)
+   */
+  public async waitMessage(): Promise<LiveServerMessage | undefined> {
+    return new Promise((resolve) => {
+      const checkQueue = () => {
+        const message = this.responseQueue.shift();
+        if (message) {
+          resolve(message);
+        } else {
+          setTimeout(checkQueue, 100);
+        }
+      };
+      checkQueue();
+    });
+  }
+
+  /**
+   * Handle a complete turn (collection of messages until turnComplete)
+   */
+  public async handleTurn(): Promise<LiveServerMessage[]> {
+    const turn: LiveServerMessage[] = [];
+    let done = false;
+
+    while (!done) {
+      const message = await this.waitMessage();
+      if (message) {
+        turn.push(message);
+        if (message.serverContent && message.serverContent.turnComplete) {
+          done = true;
+        }
+      }
+    }
+
+    return turn;
+  }
+
+  /**
    * Handle tool calls with enhanced logging and processing
    */
   private handleToolCall(toolCall: LiveServerToolCall): void {
@@ -610,6 +681,12 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
           } with arguments: ${JSON.stringify(functionCall.args)}`
         );
       });
+
+      // Enhanced logging for tool call processing
+      this.log(
+        "server.toolCall",
+        `Received ${toolCall.functionCalls.length} function calls`
+      );
     }
   }
 

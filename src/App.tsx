@@ -17,8 +17,7 @@
 import { useRef, useState } from "react";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
-import { Altair } from "./tools/altair/Altair";
-import TMDbMovieReview from "./tools/tmdb";
+import UnifiedAssistant from "./tools/tmdb";
 import ControlTray from "./components/control-tray/ControlTray";
 import cn from "classnames";
 import { LiveClientOptions } from "./types";
@@ -38,8 +37,7 @@ function App() {
   const videoRef = useRef<HTMLVideoElement>(null);
   // either the screen capture, the video or null, if null we hide it
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
-  // toggle between different tools
-  const [activeApp, setActiveApp] = useState<'altair' | 'movies'>('movies');
+  // Unified assistant replaces manual toggles
 
   return (
     <div className="App">
@@ -47,36 +45,12 @@ function App() {
         <div className="streaming-console bg-neutral-15 text-gray-300 flex h-screen w-screen [&_a]:text-gray-300 [&_.disabled]:pointer-events-none [&_.disabled>*]:pointer-events-none">
           <SidePanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
-            {/* App Toggle Buttons */}
-            <div className="absolute top-4 left-4 z-10 flex gap-2">
-              <button
-                onClick={() => setActiveApp('movies')}
-                className={cn(
-                  "px-4 py-2 rounded text-sm font-medium transition-colors",
-                  activeApp === 'movies' 
-                    ? "bg-blue-600 text-white" 
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                )}
-              >
-                🎬 Movie Reviews
-              </button>
-              <button
-                onClick={() => setActiveApp('altair')}
-                className={cn(
-                  "px-4 py-2 rounded text-sm font-medium transition-colors",
-                  activeApp === 'altair' 
-                    ? "bg-blue-600 text-white" 
-                    : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-                )}
-              >
-                📊 Altair Charts
-              </button>
+            <div className="absolute top-4 left-4 z-10 px-3 py-2 rounded bg-gray-700 text-xs text-gray-200">
+              Unified assistant active (movies • search • charts)
             </div>
-            
+
             <div className="main-app-area flex flex-1 items-center justify-center w-full">
-              {/* Conditional App Rendering */}
-              {activeApp === 'movies' && <TMDbMovieReview />}
-              {activeApp === 'altair' && <Altair />}
+              <UnifiedAssistant />
               <video
                 className={cn(
                   "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",

@@ -27,14 +27,8 @@ const LeftPanel = dynamic(
   () => import("../../src/components/side-panel/LeftPanel"),
   { ssr: false }
 );
-const Altair = dynamic(
-  () =>
-    import("../../src/tools/altair/Altair").then((m) => ({
-      default: m.Altair,
-    })),
-  { ssr: false }
-);
-const TMDbMovieBrowser = dynamic(() => import("../../src/tools/tmdb"), {
+// Unified assistant (movies + charts + search)
+const UnifiedAssistant = dynamic(() => import("../../src/tools/tmdb"), {
   ssr: false,
 });
 const ControlTray = dynamic(
@@ -46,7 +40,7 @@ import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
-  const [activeApp, setActiveApp] = useState<"movies" | "altair">("movies");
+  // Unified experience, no manual tool selection
   // Overlay that consumes context under the provider
   const OrbOverlay = () => {
     return (
@@ -77,29 +71,10 @@ export default function DashboardPage() {
             {/* Top controls aligned to sidebars */}
             <div className="w-full h-12 shrink-0 border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm px-3 flex items-center justify-between">
               {/* Just after left sidebar */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setActiveApp("movies")}
-                  className={cn(
-                    "px-3 h-8 rounded text-sm font-medium transition-colors",
-                    activeApp === "movies"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  )}
-                >
-                  🎬 Movie Browser
-                </button>
-                <button
-                  onClick={() => setActiveApp("altair")}
-                  className={cn(
-                    "px-3 h-8 rounded text-sm font-medium transition-colors",
-                    activeApp === "altair"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  )}
-                >
-                  📊 Altair Charts
-                </button>
+              <div className="flex gap-2 text-sm text-muted-foreground">
+                <span>
+                  Unified assistant: movies, search & charts auto-selected
+                </span>
               </div>
               {/* Controls on the right side */}
               <div className="flex items-center gap-2">
@@ -110,9 +85,8 @@ export default function DashboardPage() {
             </div>
 
             <div className="main-app-area flex flex-1 items-center justify-center w-full">
-              {/* Conditional App Rendering */}
-              {activeApp === "movies" && <TMDbMovieBrowser />}
-              {activeApp === "altair" && <Altair />}
+              {/* Unified assistant renders movies & charts */}
+              <UnifiedAssistant />
               <video
                 className={cn(
                   "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",

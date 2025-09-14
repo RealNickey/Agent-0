@@ -3,7 +3,7 @@
  * Provides movie search, details, and review functionality
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import {
   FunctionDeclaration,
@@ -108,6 +108,24 @@ const movieRecommendationsDeclaration: FunctionDeclaration = {
   },
 };
 
+// Altair visualization declaration (duplicated here for unified tool registry)
+const altairRenderDeclaration: FunctionDeclaration = {
+  name: "render_altair",
+  description:
+    "Render an Altair/vega-lite JSON specification. Provide the spec as a JSON STRING (stringified). Use after obtaining or synthesizing structured data you want to visualize.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      json_graph: {
+        type: Type.STRING,
+        description:
+          "JSON STRING specification for the chart (vega-lite / altair). Must already be stringified.",
+      },
+    },
+    required: ["json_graph"],
+  },
+};
+
 // Tool response interface
 interface MovieToolResponse {
   success: boolean;
@@ -203,6 +221,7 @@ export function TMDbTool() {
     movies?: any[];
     movieDetails?: any;
     reviews?: any[];
+    altairSpec?: string;
   }>({});
   const { client, setConfig, setModel } = useLiveAPIContext();
 
@@ -216,20 +235,26 @@ export function TMDbTool() {
       systemInstruction: {
         parts: [
           {
-            text: `You’re a general assistant. Only use the movie tools when the user’s request is clearly about movies or films.
+            text: `You are an autonomous multimodal research & analysis assistant.
 
-      If the user asks about movies, you can:
-      1) search_movies: find movies by title or keywords
-      2) get_movie_details: fetch details (optionally reviews) for a movie id
-      3) get_popular_movies: list popular films
-      4) get_top_rated_movies: list top rated films
-      5) get_movie_recommendations: recommend films based on a movie id
+When the user asks a question:
+1. Decide which tools are helpful WITHOUT asking the user to pick.
+2. You may chain tools. Example: search_movies -> get_movie_details -> render_altair to chart ratings or release trends. Or use googleSearch first for broader context, then movie tools.
+3. Use movie tools for any film / cinema / actor / recommendation / comparison queries.
+4. Use googleSearch for timely, general, or non‑TMDb facts, or to enrich context before recommendations.
+5. Use render_altair whenever a visual comparison, distribution, trend, or ranking would clarify the answer. Provide a concise natural language explanation after the chart.
 
-      If the request is not movie-related, do not call any movie tools. Keep responses concise.`,
+Guidelines:
+- Do not ask the user which tool to use; just act.
+- Prefer minimal number of calls but make additional calls if they add meaningful value (e.g., details + recommendations).
+- For charts: keep specs simple (bar, line, scatter) unless complexity is explicitly requested.
+- Always return a helpful synthesized answer referencing insights from the tool outputs.
+`,
           },
         ],
       },
       tools: [
+        { googleSearch: {} },
         {
           functionDeclarations: [
             movieSearchDeclaration,
@@ -237,6 +262,7 @@ export function TMDbTool() {
             popularMoviesDeclaration,
             topRatedMoviesDeclaration,
             movieRecommendationsDeclaration,
+            altairRenderDeclaration,
           ],
         },
       ],
@@ -335,6 +361,22 @@ export function TMDbTool() {
             }
             break;
 
+          case "render_altair":
+            // Accept the spec string and update local state; acknowledge success.
+            const { json_graph } = fc.args as any;
+            try {
+              // Validate it parses; if not, return error
+              JSON.parse(json_graph);
+              setDisplayData((d) => ({ ...d, altairSpec: json_graph }));
+              result = { success: true, data: { rendered: true } };
+            } catch (e: any) {
+              result = {
+                success: false,
+                error: `Invalid JSON spec: ${e?.message}`,
+              };
+            }
+            break;
+
           default:
             result = {
               success: false,
@@ -390,9 +432,37 @@ export function TMDbTool() {
             </div>
           </div>
         )}
+
+        {/* Altair chart area */}
+        {displayData.altairSpec && (
+          <div className="mt-6">
+            <AltairEmbed specString={displayData.altairSpec} />
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+// Lightweight embedded Altair renderer (client-side)
+function AltairEmbed({ specString }: { specString: string }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    import("vega-embed").then(({ default: vegaEmbed }) => {
+      if (!cancelled && ref.current) {
+        try {
+          vegaEmbed(ref.current!, JSON.parse(specString));
+        } catch (e) {
+          console.error("Failed to render altair spec", e);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [specString]);
+  return <div ref={ref} className="vega-embed" />;
 }
 
 export default TMDbTool;

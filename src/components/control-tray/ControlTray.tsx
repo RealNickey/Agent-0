@@ -32,6 +32,9 @@ export type ControlTrayProps = {
   supportsVideo: boolean;
   onVideoStreamChange?: (stream: MediaStream | null) => void;
   enableEditingSettings?: boolean;
+  // Optional VAD configuration overrides
+  vadSilenceMs?: number; // default 1000ms
+  vadMinVolume?: number; // default 0.005
 };
 
 type MediaStreamButtonProps = {
@@ -71,6 +74,8 @@ function ControlTray({
   onVideoStreamChange = () => {},
   supportsVideo,
   enableEditingSettings,
+  vadSilenceMs = 1000,
+  vadMinVolume = 0.005,
 }: ControlTrayProps) {
   const videoStreams = [useWebcam(), useScreenCapture()];
   const [activeVideoStream, setActiveVideoStream] =
@@ -84,6 +89,13 @@ function ControlTray({
 
   const { client, connected, connect, disconnect, volume } =
     useLiveAPIContext();
+
+  // VAD configuration (could later be surfaced via settings UI)
+  const VAD_SILENCE_MS = vadSilenceMs; // threshold to end stream segment
+  const VAD_MIN_VOLUME = vadMinVolume; // volume below which we treat as silence
+  const lastSpeechTimeRef = useRef<number>(Date.now());
+  const inSpeechRef = useRef<boolean>(false);
+  const vadIntervalRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!connected && connectButtonRef.current) {
@@ -99,6 +111,7 @@ function ControlTray({
 
   useEffect(() => {
     const onData = (base64: string) => {
+      // Always push audio; rely on server VAD but augment with client-side segmentation
       client.sendRealtimeInput([
         {
           mimeType: "audio/pcm;rate=16000",
@@ -106,15 +119,51 @@ function ControlTray({
         },
       ]);
     };
+
+    const onVolume = (v: number) => {
+      setInVolume(v);
+      const now = Date.now();
+      if (v >= VAD_MIN_VOLUME) {
+        lastSpeechTimeRef.current = now;
+        if (!inSpeechRef.current) {
+          inSpeechRef.current = true; // Speech started
+        }
+      }
+    };
+
     if (connected && !muted && audioRecorder) {
-      audioRecorder.on("data", onData).on("volume", setInVolume).start();
+      audioRecorder.on("data", onData).on("volume", onVolume).start();
+
+      // Periodically check for silence to signal audioStreamEnd
+      if (!vadIntervalRef.current) {
+        vadIntervalRef.current = window.setInterval(() => {
+          const now = Date.now();
+          // If we've been silent past threshold while previously speaking
+          if (
+            inSpeechRef.current &&
+            now - lastSpeechTimeRef.current > VAD_SILENCE_MS
+          ) {
+            client.endAudioStream();
+            inSpeechRef.current = false; // reset speech state
+          }
+        }, 250);
+      }
     } else {
       audioRecorder.stop();
+      if (vadIntervalRef.current) {
+        clearInterval(vadIntervalRef.current);
+        vadIntervalRef.current = null;
+      }
+      inSpeechRef.current = false;
     }
     return () => {
-      audioRecorder.off("data", onData).off("volume", setInVolume);
+      audioRecorder.off("data", onData).off("volume", onVolume);
+      if (vadIntervalRef.current) {
+        clearInterval(vadIntervalRef.current);
+        vadIntervalRef.current = null;
+      }
     };
-  }, [connected, client, muted, audioRecorder]);
+  }, [connected, client, muted, audioRecorder, VAD_MIN_VOLUME, VAD_SILENCE_MS]);
 
   useEffect(() => {
     if (videoRef.current) {

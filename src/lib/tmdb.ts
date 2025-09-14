@@ -27,23 +27,36 @@ export type ImageSize =
   | "w780"
   | "h632";
 
-export function getImageUrl(path: string | null | undefined, size: ImageSize = "w500"): string | null {
+export function getImageUrl(
+  path: string | null | undefined,
+  size: ImageSize = "w500"
+): string | null {
   if (!path) return null;
   return `${TMDB_IMAGE_BASE}/${size}${path}`;
 }
 
-export function getPosterUrl(path: string | null | undefined, size: ImageSize = "w342"): string | null {
+export function getPosterUrl(
+  path: string | null | undefined,
+  size: ImageSize = "w342"
+): string | null {
   return getImageUrl(path, size);
 }
 
-export function getBackdropUrl(path: string | null | undefined, size: ImageSize = "w780"): string | null {
+export function getBackdropUrl(
+  path: string | null | undefined,
+  size: ImageSize = "w780"
+): string | null {
   return getImageUrl(path, size);
 }
 
 // Common zod schemas (subset of fields we typically use)
 const MovieSummarySchema = z.object({
   id: z.number(),
-  title: z.string().nullable().optional().transform((v) => v ?? ""),
+  title: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v ?? ""),
   original_title: z.string().optional().default(""),
   overview: z.string().optional().default(""),
   poster_path: z.string().nullable().optional(),
@@ -54,21 +67,21 @@ const MovieSummarySchema = z.object({
   genre_ids: z.array(z.number()).optional().default([]),
   popularity: z.number().optional().default(0),
   adult: z.boolean().optional().default(false),
-  original_language: z.string().optional().default("")
+  original_language: z.string().optional().default(""),
 });
 
 const GenreSchema = z.object({ id: z.number(), name: z.string() });
 
 const MovieDetailSchema = MovieSummarySchema.extend({
   runtime: z.number().nullable().optional(),
-  status: z.string().optional().default("")
+  status: z.string().optional().default(""),
 });
 
 const PaginatedMoviesSchema = z.object({
   page: z.number(),
   results: z.array(MovieSummarySchema),
   total_pages: z.number(),
-  total_results: z.number()
+  total_results: z.number(),
 });
 
 const CreditsSchema = z.object({
@@ -80,7 +93,7 @@ const CreditsSchema = z.object({
         name: z.string(),
         character: z.string().optional().default(""),
         profile_path: z.string().nullable().optional(),
-        order: z.number().optional().default(0)
+        order: z.number().optional().default(0),
       })
     )
     .default([]),
@@ -90,10 +103,10 @@ const CreditsSchema = z.object({
         id: z.number(),
         name: z.string(),
         department: z.string().optional().default(""),
-        job: z.string().optional().default("")
+        job: z.string().optional().default(""),
       })
     )
-    .default([])
+    .default([]),
 });
 
 const ReviewSchema = z.object({
@@ -108,9 +121,9 @@ const ReviewSchema = z.object({
       name: z.string().optional().default(""),
       username: z.string().optional().default(""),
       avatar_path: z.string().nullable().optional(),
-      rating: z.number().nullable().optional()
+      rating: z.number().nullable().optional(),
     })
-    .optional()
+    .optional(),
 });
 
 const PaginatedReviewsSchema = z.object({
@@ -118,7 +131,7 @@ const PaginatedReviewsSchema = z.object({
   page: z.number(),
   results: z.array(ReviewSchema),
   total_pages: z.number(),
-  total_results: z.number()
+  total_results: z.number(),
 });
 
 export type MovieSummary = z.infer<typeof MovieSummarySchema>;
@@ -142,7 +155,7 @@ function createClient(): AxiosInstance {
     timeout: 10000,
     headers: {
       Accept: "application/json",
-      "Accept-Encoding": "gzip, deflate, br"
+      "Accept-Encoding": "gzip, deflate, br",
     },
     // Note: params set per-request; we attach api_key in request interceptor if needed
   });
@@ -152,7 +165,7 @@ function createClient(): AxiosInstance {
     if (token) {
       config.headers = {
         ...(config.headers || {}),
-        Authorization: `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       } as any;
     } else if (apiKey) {
       config.params = { ...(config.params || {}), api_key: apiKey };
@@ -166,9 +179,16 @@ function createClient(): AxiosInstance {
       const status = err.response?.status;
       const data: any = err.response?.data;
       const message =
-        (data && (data.status_message || data.message)) || err.message || "TMDb request failed";
+        (data && (data.status_message || data.message)) ||
+        err.message ||
+        "TMDb request failed";
       const code = (data && data.status_code) || status;
-      const details = { status, code, url: err.config?.url, method: err.config?.method };
+      const details = {
+        status,
+        code,
+        url: err.config?.url,
+        method: err.config?.method,
+      };
       const wrapped = new Error(`${message}${code ? ` (code ${code})` : ""}`);
       (wrapped as any).details = details;
       throw wrapped;
@@ -204,14 +224,16 @@ export async function searchMovies(options: {
       include_adult: options.include_adult ?? false,
       year: options.year,
       language: options.language,
-      region: options.region
-    }
+      region: options.region,
+    },
   });
   return PaginatedMoviesSchema.parse(data);
 }
 
 // Popular movies
-export async function getPopularMovies(opts: PageOpts = {}): Promise<z.infer<typeof PaginatedMoviesSchema>> {
+export async function getPopularMovies(
+  opts: PageOpts = {}
+): Promise<z.infer<typeof PaginatedMoviesSchema>> {
   const { data } = await client.get("/movie/popular", { params: opts });
   return PaginatedMoviesSchema.parse(data);
 }
@@ -222,7 +244,7 @@ export async function getMovieDetails(
   opts: LocaleOpts & { append_to_response?: string } = {}
 ): Promise<MovieDetail> {
   const { data } = await client.get(`/movie/${movieId}`, {
-    params: { ...opts }
+    params: { ...opts },
   });
   return MovieDetailSchema.parse(data);
 }
@@ -250,7 +272,7 @@ export function toMovieCard(m: MovieSummary): MovieCard {
     posterUrl: getPosterUrl(m.poster_path, "w342"),
     backdropUrl: getBackdropUrl(m.backdrop_path, "w780"),
     releaseDate: m.release_date || "",
-    rating: m.vote_average ?? 0
+    rating: m.vote_average ?? 0,
   };
 }
 

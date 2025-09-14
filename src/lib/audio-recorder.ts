@@ -40,6 +40,8 @@ export class AudioRecorder extends EventEmitter {
   vuWorklet: AudioWorkletNode | undefined;
 
   private starting: Promise<void> | null = null;
+  private lastVolumeTime: number = Date.now();
+  private workletHealthInterval: number | null = null;
 
   constructor(public sampleRate = 16000) {
     super();
@@ -74,6 +76,13 @@ export class AudioRecorder extends EventEmitter {
           this.emit("data", arrayBufferString);
         }
       };
+      
+      // Add error handling for recording worklet
+      this.recordingWorklet.port.onmessageerror = (error: MessageEvent) => {
+        console.error("Recording worklet message error:", error);
+        this.handleWorkletError();
+      };
+      
       this.source.connect(this.recordingWorklet);
 
       // vu meter worklet
@@ -87,11 +96,18 @@ export class AudioRecorder extends EventEmitter {
       }
       this.vuWorklet = new AudioWorkletNode(this.audioContext, vuWorkletName);
       this.vuWorklet.port.onmessage = (ev: MessageEvent) => {
+        this.lastVolumeTime = Date.now();
         this.emit("volume", ev.data.volume);
+      };
+      
+      // Add error handling for VU meter worklet  
+      this.vuWorklet.port.onmessageerror = (error: MessageEvent) => {
+        console.error("VU meter worklet message error:", error);
       };
 
       this.source.connect(this.vuWorklet);
       this.recording = true;
+      this.startWorkletHealthCheck();
       resolve();
       this.starting = null;
     });
@@ -101,16 +117,61 @@ export class AudioRecorder extends EventEmitter {
     // its plausible that stop would be called before start completes
     // such as if the websocket immediately hangs up
     const handleStop = () => {
+      this.stopWorkletHealthCheck();
       this.source?.disconnect();
       this.stream?.getTracks().forEach((track) => track.stop());
       this.stream = undefined;
       this.recordingWorklet = undefined;
       this.vuWorklet = undefined;
+      this.recording = false;
     };
     if (this.starting) {
       this.starting.then(handleStop);
       return;
     }
     handleStop();
+  }
+
+  /**
+   * Start monitoring worklet health to detect failures
+   */
+  private startWorkletHealthCheck() {
+    if (this.workletHealthInterval) {
+      this.stopWorkletHealthCheck();
+    }
+
+    this.lastVolumeTime = Date.now();
+    
+    this.workletHealthInterval = window.setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastVolume = now - this.lastVolumeTime;
+      
+      // If we haven't received volume updates in a while, worklet might have failed
+      if (timeSinceLastVolume > 10000 && this.recording) { // 10 seconds
+        console.warn("Audio worklet may have failed - no volume updates received");
+        this.handleWorkletError();
+      }
+    }, 5000); // Check every 5 seconds
+  }
+
+  /**
+   * Stop worklet health monitoring
+   */
+  private stopWorkletHealthCheck() {
+    if (this.workletHealthInterval) {
+      clearInterval(this.workletHealthInterval);
+      this.workletHealthInterval = null;
+    }
+  }
+
+  /**
+   * Handle worklet errors by attempting recovery
+   */
+  private handleWorkletError() {
+    console.log("Attempting audio worklet recovery...");
+    this.emit("error", new Error("Audio worklet failed, attempting recovery"));
+    
+    // Note: Full worklet recovery would require restarting the recording
+    // This is a signal to the application that it should restart recording
   }
 }

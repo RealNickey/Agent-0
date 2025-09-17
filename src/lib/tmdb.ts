@@ -109,42 +109,10 @@ const CreditsSchema = z.object({
     .default([]),
 });
 
-const ReviewSchema = z.object({
-  id: z.string(),
-  author: z.string(),
-  content: z.string(),
-  url: z.string().url().optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-  author_details: z
-    .object({
-      name: z.string().optional().default(""),
-      username: z.string().optional().default(""),
-      avatar_path: z.string().nullable().optional(),
-      rating: z.number().nullable().optional(),
-    })
-    .optional(),
-});
-
-const PaginatedReviewsSchema = z.object({
-  id: z.number().optional(),
-  page: z.number(),
-  results: z.array(ReviewSchema),
-  total_pages: z.number(),
-  total_results: z.number(),
-});
-
 export type MovieSummary = z.infer<typeof MovieSummarySchema>;
 export type MovieDetail = z.infer<typeof MovieDetailSchema>;
 export type Credits = z.infer<typeof CreditsSchema>;
-export type Review = z.infer<typeof ReviewSchema>;
-export type PaginatedReviews = z.infer<typeof PaginatedReviewsSchema>;
-
-// Additional movie lists
-const PaginatedRecommendationsSchema = PaginatedMoviesSchema; // same shape
-export type PaginatedRecommendations = z.infer<
-  typeof PaginatedRecommendationsSchema
->;
+// (Reviews & recommendations removed for simplified integration)
 
 // Axios client with auth via env
 function createClient(): AxiosInstance {
@@ -237,22 +205,6 @@ export async function searchMovies(options: {
   return PaginatedMoviesSchema.parse(data);
 }
 
-// Popular movies
-export async function getPopularMovies(
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get("/movie/popular", { params: opts });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-// Top rated movies
-export async function getTopRatedMovies(
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get("/movie/top_rated", { params: opts });
-  return PaginatedMoviesSchema.parse(data);
-}
-
 // Movie details
 export async function getMovieDetails(
   movieId: number,
@@ -262,28 +214,6 @@ export async function getMovieDetails(
     params: { ...opts },
   });
   return MovieDetailSchema.parse(data);
-}
-
-// Recommended movies
-export async function getRecommendedMovies(
-  movieId: number,
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get(`/movie/${movieId}/recommendations`, {
-    params: opts,
-  });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-// Movie reviews
-export async function getMovieReviews(
-  movieId: number,
-  opts: PageOpts = {}
-): Promise<PaginatedReviews> {
-  const { data } = await client.get(`/movie/${movieId}/reviews`, {
-    params: opts,
-  });
-  return PaginatedReviewsSchema.parse(data);
 }
 
 // Genres

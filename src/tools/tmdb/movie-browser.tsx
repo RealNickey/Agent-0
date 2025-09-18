@@ -195,6 +195,31 @@ export default function MovieBrowser() {
   const [view, setView] = useState<"grid" | "details">("grid");
   const { client, setConfig, setModel } = useLiveAPIContext();
 
+  // Lightweight in-file toast notifications
+  type ToastType = "success" | "error" | "info";
+  interface Toast {
+    id: string;
+    message: string;
+    type: ToastType;
+    duration: number;
+  }
+
+  const [toasts, setToasts] = useState<Toast[]>([]);
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  }, []);
+
+  const addToast = useCallback(
+    (message: string, type: ToastType = "info", duration = 3500) => {
+      const id = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+      setToasts((prev) => [...prev, { id, message, type, duration }]);
+      // Auto-dismiss
+      window.setTimeout(() => removeToast(id), duration);
+    },
+    [removeToast]
+  );
+
   // Configuration for the AI assistant
   const config = useMemo(
     () => ({
@@ -339,13 +364,27 @@ export default function MovieBrowser() {
       );
 
       client.sendToolResponse({ functionResponses: responses });
+
+      // Notify user that the tool results are ready
+      const failures = responses.filter((r) =>
+        (r.response as any)?.output?.success === false
+      );
+      if (failures.length > 0) {
+        const msg =
+          failures.length === 1
+            ? `There was a problem handling ${failures[0].name}.`
+            : `${failures.length} tool calls encountered errors.`;
+        addToast(msg, "error");
+      } else {
+        addToast("🔔 Your result is ready.", "success");
+      }
     };
 
     client.on("toolcall", onToolCall);
     return () => {
       client.off("toolcall", onToolCall);
     };
-  }, [client]);
+  }, [client, addToast]);
 
   const handleViewChange = useCallback(
     (newView: "grid" | "details") => {
@@ -363,6 +402,36 @@ export default function MovieBrowser() {
 
   return (
     <div className="movie-browser h-full w-full bg-gray-900 text-white">
+      {/* Toast Notifications */}
+      <div className="fixed top-4 right-4 z-50 space-y-2" aria-live="polite">
+        {toasts.map((t) => (
+          <div
+            key={t.id}
+            className={
+              `min-w-[260px] max-w-[360px] rounded-md shadow-lg border-l-4 p-3 text-sm flex items-start gap-3 transition-all ` +
+              (t.type === "success"
+                ? "bg-gray-800/95 border-green-500 text-green-200"
+                : t.type === "error"
+                ? "bg-gray-800/95 border-red-500 text-red-200"
+                : "bg-gray-800/95 border-blue-500 text-blue-200")
+            }
+            role="status"
+          >
+            <span aria-hidden="true">
+              {t.type === "success" ? "✅" : t.type === "error" ? "⚠️" : "ℹ️"}
+            </span>
+            <div className="flex-1 leading-5">{t.message}</div>
+            <button
+              onClick={() => removeToast(t.id)}
+              className="text-gray-400 hover:text-white ml-2"
+              aria-label="Dismiss notification"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+      </div>
+
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
         <div className="flex justify-between items-center">

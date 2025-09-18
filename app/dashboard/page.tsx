@@ -10,6 +10,7 @@ const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
 });
 import SettingsDialog from "../../src/components/settings-dialog/SettingsDialog";
 import IntegrationsButton from "../../src/components/integrations/IntegrationsButton";
+import { motion, AnimatePresence } from "framer-motion";
 
 const LiveAPIProvider = dynamic(
   () =>
@@ -37,17 +38,60 @@ const ControlTray = dynamic(
 );
 import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
 
+// Main content area component that can access context
+const MainContentArea = ({
+  videoRef,
+  videoStream,
+}: {
+  videoRef: any;
+  videoStream: any;
+}) => {
+  const { toolUIActive } = useLiveAPIContext();
+
+  return (
+    <div className="main-app-area flex flex-1 items-center justify-center w-full relative">
+      {/* Unified assistant renders movies & charts */}
+      <UnifiedAssistant />
+      <video
+        className={cn("stream flex-grow max-w-[90%] rounded-[32px] max-h-fit", {
+          hidden: !videoRef.current || !videoStream,
+        })}
+        ref={videoRef}
+        autoPlay
+        playsInline
+      />
+    </div>
+  );
+};
+
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   // Unified experience, no manual tool selection
   // Overlay that consumes context under the provider
   const OrbOverlay = () => {
+    const { toolUIActive } = useLiveAPIContext();
+
     return (
       <div className="absolute inset-0 pointer-events-none z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+        <motion.div
+          className="absolute z-10 pointer-events-none"
+          animate={{
+            left: toolUIActive ? "20%" : "50%", // 20% for 2/5 position in grid
+            top: "50%",
+            x: toolUIActive ? "-50%" : "-50%",
+            y: "-50%",
+            scale: toolUIActive ? 0.8 : 1,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+            duration: 0.5,
+          }}
+        >
           <VoiceOrb size="250px" />
-        </div>
+        </motion.div>
       </div>
     );
   };
@@ -84,21 +128,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="main-app-area flex flex-1 items-center justify-center w-full">
-              {/* Unified assistant renders movies & charts */}
-              <UnifiedAssistant />
-              <video
-                className={cn(
-                  "stream flex-grow max-w-[90%] rounded-[32px] max-h-fit",
-                  {
-                    hidden: !videoRef.current || !videoStream,
-                  }
-                )}
-                ref={videoRef}
-                autoPlay
-                playsInline
-              />
-            </div>
+            <MainContentArea videoRef={videoRef} videoStream={videoStream} />
 
             <ControlTray
               videoRef={videoRef}

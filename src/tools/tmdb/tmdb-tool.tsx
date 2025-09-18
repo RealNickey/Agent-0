@@ -122,6 +122,7 @@ async function makeAPICall(
 }
 
 // Integrate shared MovieCard UI for rendering results
+import { useToolCallUI } from "@/contexts/ToolCallUIContext";
 import { MovieCard as SharedMovieCard } from "../../components/movie-card";
 
 // Adapter: shape from API to shared MovieCard props
@@ -169,13 +170,8 @@ function mapToUIMovie(apiMovie: any): UIMovie {
 }
 
 export function TMDbTool() {
-  const [displayData, setDisplayData] = useState<{
-    movies?: any[];
-    movieDetails?: any;
-    reviews?: any[]; // retained in state shape but no longer populated (simplification)
-    altairSpec?: string;
-  }>({});
   const { client, setConfig, setModel } = useLiveAPIContext();
+  const { addToolCallUI, removeToolCallUI } = useToolCallUI();
 
   useEffect(() => {
     setModel("models/gemini-live-2.5-flash-preview");
@@ -229,6 +225,7 @@ Guidelines:
 
       for (const fc of toolCall.functionCalls) {
         let result: MovieToolResponse;
+        const toolCallId = fc.id || `tool-${Date.now()}`;
 
         switch (fc.name) {
           case "search_movies":
@@ -239,7 +236,15 @@ Guidelines:
               year,
             });
             if (result.success && result.data?.items) {
-              setDisplayData({ movies: result.data.items });
+              addToolCallUI(
+                toolCallId,
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                  {result.data.items.slice(0, 6).map((m: any) => {
+                    const ui = mapToUIMovie(m);
+                    return <SharedMovieCard key={ui.id} movie={ui} />;
+                  })}
+                </div>
+              );
             }
             break;
 
@@ -247,18 +252,33 @@ Guidelines:
             const { movie_id } = fc.args as any;
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
             if (detailsResult.success) {
-              setDisplayData({ movieDetails: detailsResult.data });
+              addToolCallUI(
+                toolCallId,
+                <div className="max-w-4xl mx-auto">
+                  <div className="bg-card rounded-xl p-6">
+                    <h2 className="text-2xl font-bold text-foreground mb-2">
+                      {detailsResult.data.title}
+                    </h2>
+                    <p className="text-muted-foreground">
+                      {detailsResult.data.overview}
+                    </p>
+                  </div>
+                </div>
+              );
             }
             result = detailsResult;
             break;
 
           case "render_altair":
-            // Accept the spec string and update local state; acknowledge success.
             const { json_graph } = fc.args as any;
             try {
-              // Validate it parses; if not, return error
               JSON.parse(json_graph);
-              setDisplayData((d) => ({ ...d, altairSpec: json_graph }));
+              addToolCallUI(
+                toolCallId,
+                <div className="mt-6">
+                  <AltairEmbed specString={json_graph} />
+                </div>
+              );
               result = { success: true, data: { rendered: true } };
             } catch (e: any) {
               result = {
@@ -282,7 +302,6 @@ Guidelines:
         });
       }
 
-      // Send tool responses back to the AI
       setTimeout(() => {
         client.sendToolResponse({
           functionResponses: responses,
@@ -294,45 +313,9 @@ Guidelines:
     return () => {
       client.off("toolcall", onToolCall);
     };
-  }, [client]);
+  }, [client, addToolCallUI, removeToolCallUI]);
 
-  return (
-    <div className="tmdb-tool-container h-full w-full">
-      <div className="h-full overflow-auto p-4">
-        {/* Only render cards when movies are present; no default browser */}
-        {Array.isArray(displayData.movies) && displayData.movies.length > 0 && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {displayData.movies.slice(0, 6).map((m: any) => {
-              const ui = mapToUIMovie(m);
-              return <SharedMovieCard key={ui.id} movie={ui} />;
-            })}
-          </div>
-        )}
-
-        {/* Optional details view if tool returned it */}
-        {displayData.movieDetails && (
-          <div className="max-w-4xl mx-auto">
-            {/* Minimal details rendering; card handles list view visuals */}
-            <div className="bg-card rounded-xl p-6">
-              <h2 className="text-2xl font-bold text-foreground mb-2">
-                {displayData.movieDetails.title}
-              </h2>
-              <p className="text-muted-foreground">
-                {displayData.movieDetails.overview}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Altair chart area */}
-        {displayData.altairSpec && (
-          <div className="mt-6">
-            <AltairEmbed specString={displayData.altairSpec} />
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return null;
 }
 
 // Lightweight embedded Altair renderer (client-side)

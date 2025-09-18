@@ -36,6 +36,9 @@ const ControlTray = dynamic(
   { ssr: false }
 );
 import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
+import { useToolCallUI } from "@/contexts/ToolCallUIContext";
+import { motion } from "framer-motion";
+import ToolCallCanvas from "@/components/tool-canvas/ToolCallCanvas";
 
 export default function DashboardPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -43,12 +46,44 @@ export default function DashboardPage() {
   // Unified experience, no manual tool selection
   // Overlay that consumes context under the provider
   const OrbOverlay = () => {
+    const { hasUI } = useToolCallUI();
+
     return (
-      <div className="absolute inset-0 pointer-events-none z-50">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none">
+      <>
+        <motion.div
+          className="absolute z-50 pointer-events-none"
+          animate={
+            hasUI
+              ? {
+                  top: "50%",
+                  left: "16.67%", // 1/3 of the left side
+                  translateX: "-50%",
+                  translateY: "-50%",
+                }
+              : {
+                  top: "50%",
+                  left: "50%",
+                  translateX: "-50%",
+                  translateY: "-50%",
+                }
+          }
+          transition={{ type: "spring", damping: 20, stiffness: 100 }}
+        >
           <VoiceOrb size="250px" />
-        </div>
-      </div>
+        </motion.div>
+
+        {hasUI && (
+          <motion.div
+            className="absolute right-0 top-0 w-2/3 h-full bg-background/80 backdrop-blur-xl rounded-l-xl p-4 overflow-y-auto"
+            initial={{ x: "100%", opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: "100%", opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 120 }}
+          >
+            <ToolCallCanvas />
+          </motion.div>
+        )}
+      </>
     );
   };
 

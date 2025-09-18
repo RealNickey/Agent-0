@@ -3,7 +3,7 @@
  * Provides movie search, details, and review functionality
  */
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import {
   FunctionDeclaration,
@@ -58,53 +58,23 @@ const movieDetailsDeclaration: FunctionDeclaration = {
   },
 };
 
-const popularMoviesDeclaration: FunctionDeclaration = {
-  name: "get_popular_movies",
-  description: "Get currently popular movies",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      page: {
-        type: Type.NUMBER,
-        description: "Page number for pagination (default: 1)",
-        default: 1,
-      },
-    },
-  },
-};
+// (Removed declarations for recommendations, reviews, and top rated to simplify integration)
 
-const topRatedMoviesDeclaration: FunctionDeclaration = {
-  name: "get_top_rated_movies",
-  description: "Get top-rated movies of all time",
+// Altair visualization declaration (duplicated here for unified tool registry)
+const altairRenderDeclaration: FunctionDeclaration = {
+  name: "render_altair",
+  description:
+    "Render an Altair/vega-lite JSON specification. Provide the spec as a JSON STRING (stringified). Use after obtaining or synthesizing structured data you want to visualize.",
   parameters: {
     type: Type.OBJECT,
     properties: {
-      page: {
-        type: Type.NUMBER,
-        description: "Page number for pagination (default: 1)",
-        default: 1,
+      json_graph: {
+        type: Type.STRING,
+        description:
+          "JSON STRING specification for the chart (vega-lite / altair). Must already be stringified.",
       },
     },
-  },
-};
-
-const movieRecommendationsDeclaration: FunctionDeclaration = {
-  name: "get_movie_recommendations",
-  description: "Get movie recommendations based on a specific movie",
-  parameters: {
-    type: Type.OBJECT,
-    properties: {
-      movie_id: {
-        type: Type.NUMBER,
-        description: "The TMDb movie ID to base recommendations on",
-      },
-      page: {
-        type: Type.NUMBER,
-        description: "Page number for pagination (default: 1)",
-        default: 1,
-      },
-    },
-    required: ["movie_id"],
+    required: ["json_graph"],
   },
 };
 
@@ -202,7 +172,8 @@ export function TMDbTool() {
   const [displayData, setDisplayData] = useState<{
     movies?: any[];
     movieDetails?: any;
-    reviews?: any[];
+    reviews?: any[]; // retained in state shape but no longer populated (simplification)
+    altairSpec?: string;
   }>({});
   const { client, setConfig, setModel } = useLiveAPIContext();
 
@@ -216,27 +187,28 @@ export function TMDbTool() {
       systemInstruction: {
         parts: [
           {
-            text: `You’re a general assistant. Only use the movie tools when the user’s request is clearly about movies or films.
+            text: `You are a helpful movie assistant.
 
-      If the user asks about movies, you can:
-      1) search_movies: find movies by title or keywords
-      2) get_movie_details: fetch details (optionally reviews) for a movie id
-      3) get_popular_movies: list popular films
-      4) get_top_rated_movies: list top rated films
-      5) get_movie_recommendations: recommend films based on a movie id
+Available actions:
+- search_movies: find movies when the user mentions or asks about a film.
+- get_movie_details: fetch basic info (title, overview, poster, runtime/year) for a specific movie id when clarifying or answering questions.
+- render_altair: ONLY if the user explicitly asks for a simple chart (e.g. "show a bar chart of these movies"), otherwise skip visualization.
 
-      If the request is not movie-related, do not call any movie tools. Keep responses concise.`,
+Guidelines:
+- Do NOT attempt recommendations, reviews, or top‑rated lists (those capabilities are disabled).
+- If the user asks a general question unrelated to movies, answer normally without calling movie tools.
+- Keep answers concise and focused.
+`,
           },
         ],
       },
       tools: [
+        { googleSearch: {} },
         {
           functionDeclarations: [
             movieSearchDeclaration,
             movieDetailsDeclaration,
-            popularMoviesDeclaration,
-            topRatedMoviesDeclaration,
-            movieRecommendationsDeclaration,
+            altairRenderDeclaration,
           ],
         },
       ],
@@ -272,66 +244,27 @@ export function TMDbTool() {
             break;
 
           case "get_movie_details":
-            const { movie_id, include_reviews = true } = fc.args as any;
-
-            // Get movie details from TMDb directly via our API or use a details endpoint
+            const { movie_id } = fc.args as any;
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
-            let reviewsData = null;
-
-            if (include_reviews) {
-              const reviewsResult = await makeAPICall(
-                `/api/movies/${movie_id}/reviews`
-              );
-              if (reviewsResult.success) {
-                reviewsData = reviewsResult.data?.results || [];
-              }
-            }
-
             if (detailsResult.success) {
-              setDisplayData({
-                movieDetails: detailsResult.data,
-                reviews: reviewsData,
-              });
+              setDisplayData({ movieDetails: detailsResult.data });
+            }
+            result = detailsResult;
+            break;
+
+          case "render_altair":
+            // Accept the spec string and update local state; acknowledge success.
+            const { json_graph } = fc.args as any;
+            try {
+              // Validate it parses; if not, return error
+              JSON.parse(json_graph);
+              setDisplayData((d) => ({ ...d, altairSpec: json_graph }));
+              result = { success: true, data: { rendered: true } };
+            } catch (e: any) {
               result = {
-                success: true,
-                data: {
-                  movie: detailsResult.data,
-                  reviews: reviewsData?.slice(0, 5), // Limit reviews in response
-                },
+                success: false,
+                error: `Invalid JSON spec: ${e?.message}`,
               };
-            } else {
-              result = detailsResult;
-            }
-            break;
-
-          case "get_popular_movies":
-            const { page: popularPage = 1 } = fc.args as any;
-            result = await makeAPICall("/api/movies/popular", {
-              page: popularPage,
-            });
-            if (result.success && result.data?.items) {
-              setDisplayData({ movies: result.data.items });
-            }
-            break;
-
-          case "get_top_rated_movies":
-            const { page: topRatedPage = 1 } = fc.args as any;
-            result = await makeAPICall("/api/movies/top-rated", {
-              page: topRatedPage,
-            });
-            if (result.success && result.data?.items) {
-              setDisplayData({ movies: result.data.items });
-            }
-            break;
-
-          case "get_movie_recommendations":
-            const { movie_id: recMovieId, page: recPage = 1 } = fc.args as any;
-            result = await makeAPICall(
-              `/api/movies/${recMovieId}/recommendations`,
-              { page: recPage }
-            );
-            if (result.success && result.data?.items) {
-              setDisplayData({ movies: result.data.items });
             }
             break;
 
@@ -390,9 +323,37 @@ export function TMDbTool() {
             </div>
           </div>
         )}
+
+        {/* Altair chart area */}
+        {displayData.altairSpec && (
+          <div className="mt-6">
+            <AltairEmbed specString={displayData.altairSpec} />
+          </div>
+        )}
       </div>
     </div>
   );
+}
+
+// Lightweight embedded Altair renderer (client-side)
+function AltairEmbed({ specString }: { specString: string }) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    let cancelled = false;
+    import("vega-embed").then(({ default: vegaEmbed }) => {
+      if (!cancelled && ref.current) {
+        try {
+          vegaEmbed(ref.current!, JSON.parse(specString));
+        } catch (e) {
+          console.error("Failed to render altair spec", e);
+        }
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [specString]);
+  return <div ref={ref} className="vega-embed" />;
 }
 
 export default TMDbTool;

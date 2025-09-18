@@ -109,35 +109,10 @@ const CreditsSchema = z.object({
     .default([]),
 });
 
-const ReviewSchema = z.object({
-  id: z.string(),
-  author: z.string(),
-  content: z.string(),
-  url: z.string().url().optional(),
-  created_at: z.string().optional(),
-  updated_at: z.string().optional(),
-  author_details: z
-    .object({
-      name: z.string().optional().default(""),
-      username: z.string().optional().default(""),
-      avatar_path: z.string().nullable().optional(),
-      rating: z.number().nullable().optional(),
-    })
-    .optional(),
-});
-
-const PaginatedReviewsSchema = z.object({
-  id: z.number().optional(),
-  page: z.number(),
-  results: z.array(ReviewSchema),
-  total_pages: z.number(),
-  total_results: z.number(),
-});
-
 export type MovieSummary = z.infer<typeof MovieSummarySchema>;
 export type MovieDetail = z.infer<typeof MovieDetailSchema>;
 export type Credits = z.infer<typeof CreditsSchema>;
-export type Review = z.infer<typeof ReviewSchema>;
+// (Reviews & recommendations removed for simplified integration)
 
 // Axios client with auth via env
 function createClient(): AxiosInstance {
@@ -227,14 +202,6 @@ export async function searchMovies(options: {
       region: options.region,
     },
   });
-  return PaginatedMoviesSchema.parse(data);
-}
-
-// Popular movies
-export async function getPopularMovies(
-  opts: PageOpts = {}
-): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get("/movie/popular", { params: opts });
   return PaginatedMoviesSchema.parse(data);
 }
 

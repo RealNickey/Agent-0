@@ -14,11 +14,17 @@
  * limitations under the License.
  */
 
-import { createContext, FC, ReactNode, useContext } from "react";
+import { createContext, FC, ReactNode, useContext, useState } from "react";
 import { useLiveAPI, UseLiveAPIResults } from "../hooks/use-live-api";
 import { LiveClientOptions } from "../types";
 
-const LiveAPIContext = createContext<UseLiveAPIResults | undefined>(undefined);
+const LiveAPIContext = createContext<
+  | (UseLiveAPIResults & {
+      toolUIActive: boolean;
+      setToolUIActive: (active: boolean) => void;
+    })
+  | undefined
+>(undefined);
 
 export type LiveAPIProviderProps = {
   children: ReactNode;
@@ -30,9 +36,12 @@ export const LiveAPIProvider: FC<LiveAPIProviderProps> = ({
   children,
 }) => {
   const liveAPI = useLiveAPI(options);
+  const [toolUIActive, setToolUIActive] = useState(false);
 
   return (
-    <LiveAPIContext.Provider value={liveAPI}>
+    <LiveAPIContext.Provider
+      value={{ ...liveAPI, toolUIActive, setToolUIActive }}
+    >
       {children}
     </LiveAPIContext.Provider>
   );

@@ -26,8 +26,16 @@ export default function LeftPanel() {
   );
   const [accountOpen, setAccountOpen] = useState(false);
 
-  const { user, isSignedIn } = useUser();
-  const { signOut, openSignIn, openUserProfile } = useClerk();
+  // Make Clerk usage conditional
+  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+  const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+  
+  const { user, isSignedIn } = hasValidClerkKey ? useUser() : { user: null, isSignedIn: false };
+  const { signOut, openSignIn, openUserProfile } = hasValidClerkKey ? useClerk() : { 
+    signOut: () => {}, 
+    openSignIn: () => {}, 
+    openUserProfile: () => {} 
+  };
 
   // Placeholder history items (replace with real data when wired up)
   const history = useMemo(

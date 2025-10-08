@@ -1,4 +1,6 @@
 ## Agent-0: The AI Assistant I Swore Would Be Jarvis (But Is Currently a Blinking Paperweight) 🤖🔮
+![Uploading 653shots_so.png…]()
+
 
 ## 🚀 TL;DR
 

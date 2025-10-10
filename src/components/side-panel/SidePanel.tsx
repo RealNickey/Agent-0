@@ -20,6 +20,7 @@ import { RiSidebarFoldLine, RiSidebarUnfoldLine } from "react-icons/ri";
 import Select from "react-select";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { useLoggerStore } from "../../lib/store-logger";
+import { showToast } from "../../lib/toast";
 import Logger, { LoggerFilterType } from "../logger/Logger";
 
 const filterOptions = [
@@ -63,11 +64,26 @@ export default function SidePanel() {
   }, [client, log]);
 
   const handleSubmit = () => {
-    client.send([{ text: textInput }]);
+    if (!textInput.trim()) {
+      showToast.warning("Please enter a message");
+      return;
+    }
+    
+    if (!connected) {
+      showToast.error("Not connected", "Please connect to Gemini Live API first");
+      return;
+    }
 
-    setTextInput("");
-    if (inputRef.current) {
-      inputRef.current.innerText = "";
+    try {
+      client.send([{ text: textInput }]);
+      showToast.success("Message sent");
+      
+      setTextInput("");
+      if (inputRef.current) {
+        inputRef.current.innerText = "";
+      }
+    } catch (error) {
+      showToast.error("Failed to send message", error instanceof Error ? error.message : "Unknown error");
     }
   };
 

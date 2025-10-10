@@ -5,6 +5,7 @@ import cn from "classnames";
 import { useRef, useState } from "react";
 import { LiveClientOptions } from "../../src/types";
 import { ThemeToggle } from "../../src/components/ui/theme-toggle";
+import { Toaster } from "../../src/components/ui/sonner";
 const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
   ssr: false,
 });
@@ -141,6 +142,7 @@ export default function DashboardPage() {
           </main>
           <SidePanel />
         </div>
+        <Toaster />
       </LiveAPIProvider>
     </div>
   );

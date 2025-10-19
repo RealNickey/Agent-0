@@ -42,3 +42,77 @@ export type ClientContentLog = {
   turns: Part[];
   turnComplete: boolean;
 };
+
+/**
+ * Agent-0 Session Management Types
+ */
+
+export type MessageType = 'voice' | 'text' | 'tool' | 'system';
+
+export interface SessionMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+  type: MessageType;
+  metadata?: {
+    functionCall?: string;
+    toolResponse?: any;
+    audioMetadata?: {
+      duration?: number;
+      vadTriggered?: boolean;
+    };
+  };
+}
+
+export interface SessionContext {
+  currentTopic?: string;
+  lastMovieSearch?: string;
+  lastChartGenerated?: any;
+  voiceSettings?: {
+    volume: number;
+    vadSensitivity: number;
+  };
+  activeTools?: string[];
+  conversationSummary?: string;
+}
+
+export interface SessionPreferences {
+  preferredResponseStyle?: 'casual' | 'professional' | 'detailed';
+  movieGenres?: string[];
+  chartPreferences?: {
+    defaultColorScheme?: string;
+    preferredChartTypes?: string[];
+  };
+  voicePreferences?: {
+    preferredVoice?: string;
+    speed?: number;
+  };
+}
+
+export interface AgentSession {
+  sessionId: string;
+  userId?: string; // From Clerk authentication
+  conversationId: string;
+  createdAt: number;
+  lastActivityAt: number;
+  messages: SessionMessage[];
+  context: SessionContext;
+  preferences: SessionPreferences;
+  metadata: {
+    userAgent?: string;
+    ipAddress?: string;
+    deviceType?: 'mobile' | 'desktop' | 'tablet';
+  };
+}
+
+export interface SessionCreateOptions {
+  userId?: string;
+  conversationId?: string;
+  preferences?: Partial<SessionPreferences>;
+}
+
+export interface SessionUpdateOptions {
+  context?: Partial<SessionContext>;
+  preferences?: Partial<SessionPreferences>;
+  metadata?: Partial<AgentSession['metadata']>;
+}

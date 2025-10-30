@@ -2,7 +2,14 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import React from "react";
+import { UsageProvider } from "../src/contexts/UsageContext";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  return <ClerkProvider>{children}</ClerkProvider>;
+  return (
+    <ClerkProvider>
+      <UsageProvider>
+        {children}
+      </UsageProvider>
+    </ClerkProvider>
+  );
 }

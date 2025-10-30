@@ -39,20 +39,6 @@ const movieToolDeclarations: FunctionDeclaration[] = [
       required: ["movie_id"],
     },
   },
-  {
-    name: "get_popular_movies",
-    description: "Get currently popular movies",
-    parameters: {
-      type: Type.OBJECT,
-      properties: {
-        page: {
-          type: Type.NUMBER,
-          description: "Page number (default: 1)",
-          default: 1,
-        },
-      },
-    },
-  },
 ];
 
 interface Movie {
@@ -220,32 +206,6 @@ export default function MovieBrowser() {
     setConfig(config);
   }, [setConfig, setModel, config]);
 
-  // Load popular movies on first mount
-  useEffect(() => {
-    let mounted = true;
-
-    const loadPopular = async () => {
-      if (movies.length > 0) return;
-
-      setLoading(true);
-      try {
-        const data = await makeAPICall("/api/movies/popular");
-        if (mounted) {
-          setMovies(data.items || []);
-        }
-      } catch (error) {
-        console.error("Failed to load popular movies:", error);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-
-    loadPopular();
-    return () => {
-      mounted = false;
-    };
-  }, [movies.length]);
-
   // Handle movie selection
   const handleMovieSelect = useCallback(
     async (movie: Movie) => {
@@ -304,19 +264,6 @@ export default function MovieBrowser() {
                 result = { success: true, movie: detailsData.title };
                 break;
 
-              case "get_popular_movies":
-                const { page: popularPage = 1 } = fc.args as any;
-                const popularData = await makeAPICall("/api/movies/popular", {
-                  page: popularPage,
-                });
-                setMovies(popularData.items || []);
-                setView("grid");
-                result = {
-                  success: true,
-                  count: popularData.items?.length || 0,
-                };
-                break;
-
               default:
                 result = {
                   success: false,
@@ -347,19 +294,9 @@ export default function MovieBrowser() {
     };
   }, [client]);
 
-  const handleViewChange = useCallback(
-    (newView: "grid" | "details") => {
-      if (newView === "grid" && movies.length === 0) {
-        setLoading(true);
-        makeAPICall("/api/movies/popular")
-          .then((data) => setMovies(data.items || []))
-          .catch(console.error)
-          .finally(() => setLoading(false));
-      }
-      setView(newView);
-    },
-    [movies.length]
-  );
+  const handleViewChange = useCallback((newView: "grid" | "details") => {
+    setView(newView);
+  }, []);
 
   return (
     <div className="movie-browser h-full w-full bg-gray-900 text-white">
@@ -393,7 +330,7 @@ export default function MovieBrowser() {
           </div>
         </div>
         <p className="text-gray-400 text-sm mt-1">
-          Ask AI to search movies or browse popular films
+          Ask AI to search for movies or request details about a title
         </p>
       </div>
 
@@ -425,7 +362,7 @@ export default function MovieBrowser() {
         {!loading && view === "grid" && movies.length === 0 && (
           <div className="text-center text-gray-500 mt-16">
             <p className="text-lg mb-2">🎬</p>
-            <p>Ask AI to search for movies or browse popular films.</p>
+            <p>Ask AI to search for movies or request specific details.</p>
           </div>
         )}
       </div>

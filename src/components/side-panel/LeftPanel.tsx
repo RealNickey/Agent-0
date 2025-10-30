@@ -19,6 +19,14 @@ import {
  * LeftPanel: a simple collapsible side panel (no console content)
  * Mirrors SidePanel container styles for visual symmetry.
  */
+function useClerkData() {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { user, isSignedIn } = useUser();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { signOut, openSignIn, openUserProfile } = useClerk();
+  return { user, isSignedIn, signOut, openSignIn, openUserProfile };
+}
+
 export default function LeftPanel() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<"tasks" | "notes" | "focus" | "library">(
@@ -26,16 +34,8 @@ export default function LeftPanel() {
   );
   const [accountOpen, setAccountOpen] = useState(false);
 
-  // Make Clerk usage conditional
-  const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-  const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
-  
-  const { user, isSignedIn } = hasValidClerkKey ? useUser() : { user: null, isSignedIn: false };
-  const { signOut, openSignIn, openUserProfile } = hasValidClerkKey ? useClerk() : { 
-    signOut: () => {}, 
-    openSignIn: () => {}, 
-    openUserProfile: () => {} 
-  };
+  const { user, isSignedIn, signOut, openSignIn, openUserProfile } =
+    useClerkData();
 
   // Placeholder history items (replace with real data when wired up)
   const history = useMemo(

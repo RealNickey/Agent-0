@@ -27,12 +27,10 @@ Concise, project-specific guidance for this repo (Next.js 15 + client-side multi
 - Tool responses: Always map each `functionCall` to `{ id, name, response: { output: <payload> } }`. Use slight delay (`setTimeout(...,100)`) only if batching pending state; otherwise immediate send is fine.
 - Audio: Add worklets via `audioStreamer.addWorklet(name, src, handler)`; reuse existing context IDs to avoid multiple AudioContext instances (browser autoplay policies).
 - Health & reconnection: `GenAILiveClient` auto schedules exponential backoff (max 3) on unexpected close; don't layer duplicate reconnect loops.
-- Caching strategy: Use `export const revalidate = <seconds>` or `dynamic = 'force-dynamic'` in `app/api/*` routes. Follow existing TTLs (search=120s, popular=600s, details=3600s) for consistency unless requirements change.
+- Caching strategy: Use `export const revalidate = <seconds>` or `dynamic = 'force-dynamic'` in `app/api/*` routes. Follow existing TTLs (search=120s, details=3600s) for consistency unless requirements change.
 
 ## 4. Pitfalls / Gotchas
 
-- Missing TMDb helpers: API routes reference (or tools expect) `getMovieReviews`, `getRecommendedMovies`, and a top‑rated flow, but these functions are NOT implemented in `src/lib/tmdb.ts`. Add them (mirror `getPopularMovies` style with zod validation) before extending tool logic.
-- Missing API route: Tool calls `GET /api/movies/top-rated` but no corresponding route exists under `app/api/movies/`; create one (e.g. `top-rated/route.ts`) once a `getTopRatedMovies` helper is added.
 - `next.config.js` sets `ignoreBuildErrors: true`; type errors won’t fail CI—manually review Typescript before large refactors.
 - Audio worklet registration: Ensure unique `workletName`; registry prevents duplicates but merges handlers—remove listeners if discarding components to avoid leaks.
 - Avoid importing `@google/genai` server features directly in serverless edge runtime unless confirmed compatible; current usage is client websocket only.
@@ -58,7 +56,7 @@ Concise, project-specific guidance for this repo (Next.js 15 + client-side multi
 
 ## 8. Safe Extensions
 
-- Implement missing TMDb endpoints first (reviews, recommendations, top-rated) in `src/lib/tmdb.ts` then adjust API routes/tools.
+- Re-introduce TMDb endpoints (e.g., reviews, recommendations, curated lists) only after adding matching helpers in `src/lib/tmdb.ts` and updating tools/UI.
 - Add tests for new server utilities (pattern: validate with zod, throw enriched errors).
 
 Provide reasoning in PR descriptions if diverging from these patterns.

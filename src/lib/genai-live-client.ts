@@ -111,10 +111,18 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   private pingTimeoutId: number | null = null;
   private readonly PING_INTERVAL = 60000; // 60 seconds - increased to reduce aggressive pinging
   private readonly PING_TIMEOUT = 15000; // 15 seconds - increased timeout
+  private readonly STALE_CONNECTION_MULTIPLIER = 2; // Multiplier for detecting stale connections
+  private readonly SESSION_INVALID_MULTIPLIER = 3; // Multiplier for session validation timeout
   private reconnectAttempts: number = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 3;
   private reconnectTimeoutId: number | null = null;
   private connectionEstablishedTime: number = 0; // Track when connection was established
+  
+  // WebSocket close codes
+  private readonly CLOSE_NORMAL = 1000; // Normal closure
+  private readonly CLOSE_GOING_AWAY = 1001; // Endpoint going away
+  private readonly CLOSE_NO_STATUS = 1005; // No status code received
+  private readonly CLOSE_ABNORMAL = 1006; // Abnormal closure (no close frame)
 
   // Audio collection for WAV conversion
   private audioParts: string[] = [];
@@ -243,13 +251,12 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     this.emit("close", e);
 
     // Only attempt reconnection for unexpected disconnects and specific error codes
-    // Code 1000 = Normal closure
-    // Code 1001 = Going away (endpoint going away)
-    // Code 1006 = Abnormal closure (no close frame received)
-    // We should only auto-reconnect on abnormal closures (1006) and certain error conditions
+    // We should only auto-reconnect on abnormal closures and certain error conditions
     const shouldReconnect = 
-      e.code === 1006 || // Abnormal closure
-      (e.code !== 1000 && e.code !== 1001 && e.code !== 1005); // Not a normal/intentional close
+      e.code === this.CLOSE_ABNORMAL || // Abnormal closure
+      (e.code !== this.CLOSE_NORMAL && 
+       e.code !== this.CLOSE_GOING_AWAY && 
+       e.code !== this.CLOSE_NO_STATUS); // Not a normal/intentional close
 
     if (shouldReconnect && this.config && this._model) {
       this.log(
@@ -542,9 +549,9 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
       return;
     }
 
-    // If we haven't received any message in twice the ping interval, 
+    // If we haven't received any message in a while, 
     // the connection might be having issues
-    if (timeSinceLastMessage > this.PING_INTERVAL * 2) {
+    if (timeSinceLastMessage > this.PING_INTERVAL * this.STALE_CONNECTION_MULTIPLIER) {
       this.log(
         "client.health",
         `No activity for ${timeSinceLastMessage}ms - connection may be stale`
@@ -644,8 +651,8 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
       return true;
     }
 
-    // Allow up to 3x the ping interval of inactivity before marking as invalid
-    if (timeSinceLastMessage > this.PING_INTERVAL * 3) {
+    // Allow extended inactivity before marking as invalid
+    if (timeSinceLastMessage > this.PING_INTERVAL * this.SESSION_INVALID_MULTIPLIER) {
       this.log("client.session", "Session appears inactive");
       return false;
     }

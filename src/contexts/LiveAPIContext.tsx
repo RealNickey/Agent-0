@@ -14,11 +14,12 @@
  * limitations under the License.
  */
 
-import { createContext, FC, ReactNode, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, FC, ReactNode, useContext, useState, useEffect } from "react";
 import { useLiveAPI, UseLiveAPIResults } from "../hooks/use-live-api";
 import { LiveClientOptions } from "../types";
 import { useUsage } from "./UsageContext";
 import LoginPromptModal from "../components/login-prompt/LoginPromptModal";
+import type { Part } from "@google/genai";
 
 const LiveAPIContext = createContext<
   | (UseLiveAPIResults & {
@@ -59,7 +60,7 @@ export const LiveAPIProvider: FC<LiveAPIProviderProps> = ({
     const originalSend = client.send.bind(client);
     
     // Create a wrapper that checks usage limits before sending
-    const wrappedSend = (parts: any, turnComplete: boolean = true) => {
+    const wrappedSend = (parts: Part | Part[], turnComplete: boolean = true) => {
       // Check if this is a user-initiated message (not a health check or system message)
       // Health checks and system messages typically use session.sendClientContent directly
       if (isAnonymous && !canSendMessage) {

@@ -183,6 +183,9 @@ Agent-0/
 - **Clerk redirects** might flash briefly (SSR timing thing)
 - **Vega-Lite bundle size** is chonky (~500KB, sorry)
 
+### Recently Fixed 🎉
+- ~~**Gemini connects then disconnects immediately**~~ - Fixed with improved health checking and reconnection logic. See [GEMINI_CONNECTION_FIXES.md](GEMINI_CONNECTION_FIXES.md) for details.
+
 ## 🙏 Credits & Acknowledgments
 
 **Built With:**

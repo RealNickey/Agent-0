@@ -17,10 +17,6 @@ import {
 } from "react-icons/ri";
 import { useUsage } from "../../contexts/UsageContext";
 
-/**
- * LeftPanel: a simple collapsible side panel (no console content)
- * Mirrors SidePanel container styles for visual symmetry.
- */
 function useClerkData() {
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const { user, isSignedIn } = useUser();
@@ -28,6 +24,8 @@ function useClerkData() {
   const { signOut, openSignIn, openUserProfile } = useClerk();
   return { user, isSignedIn, signOut, openSignIn, openUserProfile };
 }
+
+export { useClerkData };
 
 export default function LeftPanel() {
   const [open, setOpen] = useState(false);
@@ -38,14 +36,10 @@ export default function LeftPanel() {
 
   const { user, isSignedIn } = useUser();
   const { signOut, openSignIn, openUserProfile } = useClerk();
-  
+
   // Usage tracking for anonymous users
-  const {
-    isAnonymous,
-    remainingMessages,
-    messageLimit,
-    usagePercentage,
-  } = useUsage();
+  const { isAnonymous, remainingMessages, messageLimit, usagePercentage } =
+    useUsage();
 
   // Placeholder history items (replace with real data when wired up)
   const history = useMemo(
@@ -282,7 +276,7 @@ export default function LeftPanel() {
               <RiSparklingLine className="h-4 w-4" />
               <span>Free Messages</span>
             </div>
-            
+
             <div className="space-y-1.5">
               <div className="flex items-baseline justify-between text-[11px]">
                 <span className="text-muted-foreground">
@@ -292,7 +286,7 @@ export default function LeftPanel() {
                   {Math.round(usagePercentage)}%
                 </span>
               </div>
-              
+
               {/* Progress bar */}
               <div className="h-1.5 bg-sidebar-accent/20 rounded-full overflow-hidden">
                 <div
@@ -326,7 +320,12 @@ export default function LeftPanel() {
       )}
 
       {/* Account footer */}
-      <div className={cn("relative border-t border-sidebar-border bg-sidebar/80", !isAnonymous && "mt-auto")}>
+      <div
+        className={cn(
+          "relative border-t border-sidebar-border bg-sidebar/80",
+          !isAnonymous && "mt-auto"
+        )}
+      >
         {/* Expanded account row */}
         {open ? (
           <div className="p-2">

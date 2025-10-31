@@ -21,15 +21,6 @@ const LiveAPIProvider = dynamic(
   { ssr: false }
 );
 
-const SidePanel = dynamic(
-  () => import("../../src/components/side-panel/SidePanel"),
-  { ssr: false }
-);
-const LeftPanel = dynamic(
-  () => import("../../src/components/side-panel/LeftPanel"),
-  { ssr: false }
-);
-// Unified assistant (movies + charts + search)
 const UnifiedAssistant = dynamic(() => import("../../src/tools/tmdb"), {
   ssr: false,
 });
@@ -37,6 +28,7 @@ const ControlTray = dynamic(
   () => import("../../src/components/control-tray/ControlTray"),
   { ssr: false }
 );
+import { AccountWidget } from "../../src/components/ui/account-widget";
 import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
 
 // Main content area component that can access context
@@ -107,8 +99,8 @@ export default function DashboardPage() {
     <div className="App bg-background text-foreground">
       <LiveAPIProvider options={apiOptions}>
         <div className="streaming-console flex h-screen w-screen bg-background text-foreground">
-          <LeftPanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden bg-card text-card-foreground">
+            <AccountWidget />
             <div className="z-20">
               <OrbOverlay />
             </div>
@@ -140,7 +132,6 @@ export default function DashboardPage() {
               {/* put your own buttons here */}
             </ControlTray>
           </main>
-          <SidePanel />
         </div>
         <Toaster />
       </LiveAPIProvider>

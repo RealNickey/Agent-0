@@ -109,11 +109,12 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   private healthCheckInterval: number | null = null;
   private lastPingTime: number = 0;
   private pingTimeoutId: number | null = null;
-  private readonly PING_INTERVAL = 30000; // 30 seconds
-  private readonly PING_TIMEOUT = 10000; // 10 seconds
+  private readonly PING_INTERVAL = 60000; // 60 seconds - increased to reduce aggressive pinging
+  private readonly PING_TIMEOUT = 15000; // 15 seconds - increased timeout
   private reconnectAttempts: number = 0;
   private readonly MAX_RECONNECT_ATTEMPTS = 3;
   private reconnectTimeoutId: number | null = null;
+  private connectionEstablishedTime: number = 0; // Track when connection was established
 
   // Audio collection for WAV conversion
   private audioParts: string[] = [];
@@ -177,7 +178,13 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     }
 
     this._status = "connected";
-    this.startHealthCheck();
+    this.connectionEstablishedTime = Date.now();
+    // Delay health check to allow connection to fully stabilize
+    setTimeout(() => {
+      if (this._status === "connected") {
+        this.startHealthCheck();
+      }
+    }, 5000); // Wait 5 seconds after connection before starting health checks
     return true;
   }
 
@@ -206,13 +213,22 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     this.log("server.error", e.message);
     this.emit("error", e);
 
-    // Enhanced error handling - attempt reconnection on connection errors
-    if (this._status === "connected") {
+    // Only attempt reconnection if we were previously connected and stable
+    // Avoid reconnection loops during initial connection or rapid failures
+    const timeSinceConnection = Date.now() - this.connectionEstablishedTime;
+    const wasStableConnection = timeSinceConnection > 10000; // Connection was stable for 10+ seconds
+
+    if (this._status === "connected" && wasStableConnection) {
       this.log(
         "client.reconnect",
-        "Connection error detected, attempting recovery"
+        "Connection error detected on stable connection, attempting recovery"
       );
       this.scheduleReconnect();
+    } else {
+      this.log(
+        "server.error",
+        "Error during initial connection or unstable state, not auto-reconnecting"
+      );
     }
   }
 
@@ -222,17 +238,30 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
     this.log(
       `server.close`,
-      `disconnected ${e.reason ? `with reason: ${e.reason}` : ``}`
+      `disconnected (code: ${e.code}) ${e.reason ? `with reason: ${e.reason}` : ``}`
     );
     this.emit("close", e);
 
-    // Attempt reconnection unless it was an intentional disconnect
-    if (e.code !== 1000 && this.config && this._model) {
+    // Only attempt reconnection for unexpected disconnects and specific error codes
+    // Code 1000 = Normal closure
+    // Code 1001 = Going away (endpoint going away)
+    // Code 1006 = Abnormal closure (no close frame received)
+    // We should only auto-reconnect on abnormal closures (1006) and certain error conditions
+    const shouldReconnect = 
+      e.code === 1006 || // Abnormal closure
+      (e.code !== 1000 && e.code !== 1001 && e.code !== 1005); // Not a normal/intentional close
+
+    if (shouldReconnect && this.config && this._model) {
       this.log(
         "client.reconnect",
-        "Unexpected disconnect, attempting reconnection"
+        `Unexpected disconnect (code ${e.code}), attempting reconnection`
       );
       this.scheduleReconnect();
+    } else {
+      this.log(
+        "client.close",
+        `Connection closed normally (code ${e.code}), not reconnecting`
+      );
     }
   }
 
@@ -495,33 +524,38 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
   }
 
   /**
-   * Check connection health by sending a ping-like message
+   * Check connection health by monitoring message activity
+   * Instead of sending ping messages, we passively monitor for activity
    */
   private checkConnectionHealth() {
     if (this._status !== "connected" || !this.session) {
       return;
     }
 
-    // Send a minimal message to test connection responsiveness
-    try {
-      this.session.sendClientContent({
-        turns: [{ text: "" }],
-        turnComplete: false,
-      });
+    const now = Date.now();
+    const timeSinceLastMessage = now - this.lastPingTime;
+    const timeSinceConnection = now - this.connectionEstablishedTime;
 
-      this.log("client.ping", "Health check sent");
+    // Only start checking after connection has been stable for a while
+    if (timeSinceConnection < 10000) {
+      // Don't check health in the first 10 seconds
+      return;
+    }
 
-      // Set timeout to detect if server doesn't respond
-      this.pingTimeoutId = window.setTimeout(() => {
-        this.log(
-          "client.ping",
-          "Health check timeout - connection appears unresponsive"
-        );
+    // If we haven't received any message in twice the ping interval, 
+    // the connection might be having issues
+    if (timeSinceLastMessage > this.PING_INTERVAL * 2) {
+      this.log(
+        "client.health",
+        `No activity for ${timeSinceLastMessage}ms - connection may be stale`
+      );
+      
+      // Before assuming connection is dead, try a gentle validation
+      // by checking if the session still exists and is valid
+      if (!this.validateSession()) {
+        this.log("client.health", "Session validation failed");
         this.handleUnresponsiveConnection();
-      }, this.PING_TIMEOUT);
-    } catch (error) {
-      this.log("client.ping", `Health check failed: ${error}`);
-      this.handleUnresponsiveConnection();
+      }
     }
   }
 
@@ -592,6 +626,7 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
 
   /**
    * Validate that the session is still active and responsive
+   * This is a passive check that doesn't send messages
    */
   public validateSession(): boolean {
     if (!this.session || this._status !== "connected") {
@@ -599,10 +634,18 @@ export class GenAILiveClient extends EventEmitter<LiveClientEventTypes> {
     }
 
     // Check if we've received any messages recently
+    // Allow for longer periods of inactivity before considering session invalid
     const now = Date.now();
     const timeSinceLastMessage = now - this.lastPingTime;
+    const timeSinceConnection = now - this.connectionEstablishedTime;
 
-    if (timeSinceLastMessage > this.PING_INTERVAL * 2) {
+    // If connection was just established, it's valid
+    if (timeSinceConnection < 30000) {
+      return true;
+    }
+
+    // Allow up to 3x the ping interval of inactivity before marking as invalid
+    if (timeSinceLastMessage > this.PING_INTERVAL * 3) {
       this.log("client.session", "Session appears inactive");
       return false;
     }

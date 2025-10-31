@@ -52,38 +52,38 @@ export const LiveAPIProvider: FC<LiveAPIProviderProps> = ({
     isAnonymous,
   } = useUsage();
 
-  // Track user messages via content events from the client
+  // Track user messages by intercepting send calls
+  // We'll create a proxy for the send method that tracks usage
   useEffect(() => {
-    const handleContent = (event: any) => {
-      // Only track user turns (not model responses)
-      if (event?.turn === "user" && isAnonymous) {
-        trackMessage();
-      }
-    };
-
-    liveAPI.client.on("content", handleContent);
+    const client = liveAPI.client;
+    const originalSend = client.send.bind(client);
     
-    return () => {
-      liveAPI.client.off("content", handleContent);
-    };
-  }, [liveAPI.client, trackMessage, isAnonymous]);
-
-  // Wrap the original client.send to check usage before sending
-  const originalSend = useCallback(liveAPI.client.send.bind(liveAPI.client), [liveAPI.client]);
-  
-  useEffect(() => {
-    // Create a wrapper function
-    const wrappedSend = (message: any) => {
+    // Create a wrapper that checks usage limits before sending
+    const wrappedSend = (parts: any, turnComplete: boolean = true) => {
+      // Check if this is a user-initiated message (not a health check or system message)
+      // Health checks and system messages typically use session.sendClientContent directly
       if (isAnonymous && !canSendMessage) {
         setShowLoginPrompt(true);
-        return Promise.reject(new Error("Usage limit reached. Please sign in to continue."));
+        throw new Error("Usage limit reached. Please sign in to continue.");
       }
-      return originalSend(message);
+      
+      // Track the message for anonymous users
+      if (isAnonymous) {
+        trackMessage();
+      }
+      
+      // Call the original send method with proper signature
+      return originalSend(parts, turnComplete);
     };
 
-    // Override the send method
-    liveAPI.client.send = wrappedSend as any;
-  }, [liveAPI.client, originalSend, canSendMessage, isAnonymous, setShowLoginPrompt]);
+    // Replace the send method
+    client.send = wrappedSend;
+    
+    // Cleanup: restore original send method
+    return () => {
+      client.send = originalSend;
+    };
+  }, [liveAPI.client, canSendMessage, isAnonymous, setShowLoginPrompt, trackMessage]);
 
   return (
     <LiveAPIContext.Provider

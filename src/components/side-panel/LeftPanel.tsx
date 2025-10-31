@@ -21,6 +21,14 @@ import { useUsage } from "../../contexts/UsageContext";
  * LeftPanel: a simple collapsible side panel (no console content)
  * Mirrors SidePanel container styles for visual symmetry.
  */
+function useClerkData() {
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { user, isSignedIn } = useUser();
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const { signOut, openSignIn, openUserProfile } = useClerk();
+  return { user, isSignedIn, signOut, openSignIn, openUserProfile };
+}
+
 export default function LeftPanel() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<"tasks" | "notes" | "focus" | "library">(

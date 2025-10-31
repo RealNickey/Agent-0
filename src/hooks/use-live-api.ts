@@ -19,6 +19,7 @@ import { GenAILiveClient } from "../lib/genai-live-client";
 import { LiveClientOptions } from "../types";
 import { AudioStreamer } from "../lib/audio-streamer";
 import { audioContext } from "../lib/utils";
+import { connectionToasts } from "../lib/toast";
 import VolMeterWorket from "../lib/worklets/vol-meter";
 import { LiveConnectConfig } from "@google/genai";
 
@@ -64,6 +65,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
             })
             .catch((error) => {
               console.error("Failed to add VU meter worklet:", error);
+              connectionToasts.audioError("Failed to initialize audio worklet");
               // Attempt to recreate audio streamer on worklet failure
               setTimeout(() => {
                 audioStreamerRef.current = null;
@@ -72,6 +74,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         })
         .catch((error) => {
           console.error("Failed to create audio context:", error);
+          connectionToasts.audioError("Failed to create audio context");
         });
     }
   }, [audioStreamerRef]);
@@ -102,10 +105,12 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         console.warn(
           "Audio pipeline may be disconnected - no audio received recently"
         );
+        connectionToasts.audioError("No audio received recently - pipeline may be disconnected");
 
         // Try to validate session
         if (!client.validateSession()) {
           console.log("Session validation failed during audio health check");
+          connectionToasts.sessionValidationFailed();
         }
 
         // Try to recreate audio streamer as a recovery mechanism
@@ -125,23 +130,27 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   useEffect(() => {
     const onOpen = () => {
       setConnected(true);
+      connectionToasts.connected();
       // Start audio pipeline monitoring when connected
       startAudioHealthCheck();
     };
 
     const onClose = () => {
       setConnected(false);
+      connectionToasts.disconnected();
       // Stop audio pipeline monitoring when disconnected
       stopAudioHealthCheck();
     };
 
     const onError = (error: ErrorEvent) => {
       console.error("error", error);
+      connectionToasts.connectionError(error.message);
       // Try to validate session and reconnect if needed
       if (!client.validateSession()) {
         console.log(
           "Session validation failed, connection may be unresponsive"
         );
+        connectionToasts.sessionValidationFailed();
       }
     };
 
@@ -196,8 +205,15 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     if (!config) {
       throw new Error("config has not been set");
     }
-    client.disconnect();
-    await client.connect(model, config);
+    try {
+      connectionToasts.connecting();
+      client.disconnect();
+      await client.connect(model, config);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      connectionToasts.connectionError(errorMessage);
+      throw error;
+    }
   }, [client, config, model]);
 
   const disconnect = useCallback(async () => {

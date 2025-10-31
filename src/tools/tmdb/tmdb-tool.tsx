@@ -5,6 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
+import { toolToasts } from "../../lib/toast";
 import {
   FunctionDeclaration,
   LiveServerToolCall,
@@ -238,6 +239,7 @@ Guidelines:
         switch (fc.name) {
           case "search_movies":
             const { query, page = 1, year } = fc.args as any;
+            toolToasts.searchStarted(query);
             result = await makeAPICall("/api/movies/search", {
               q: query,
               page,
@@ -245,6 +247,9 @@ Guidelines:
             });
             if (result.success && result.data?.items) {
               setDisplayData({ movies: result.data.items });
+              toolToasts.searchSuccess(result.data.items.length);
+            } else {
+              toolToasts.searchError(result.error);
             }
             break;
 
@@ -253,6 +258,8 @@ Guidelines:
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
             if (detailsResult.success) {
               setDisplayData({ movieDetails: detailsResult.data });
+            } else {
+              toolToasts.apiError("TMDb", detailsResult.error);
             }
             result = detailsResult;
             break;
@@ -274,6 +281,7 @@ Guidelines:
             break;
 
           default:
+            toolToasts.apiError("Tool", `Unknown function: ${fc.name}`);
             result = {
               success: false,
               error: `Unknown function: ${fc.name}`,

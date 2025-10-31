@@ -5,20 +5,20 @@
 The Movie Browser Tool is a streamlined, AI-powered movie discovery platform that integrates with The Movie Database (TMDb) API and Google's Gemini AI. This tool focuses on core functionality:
 
 - 🔍 **Search for movies** by title or keywords
-- 🎬 **View detailed movie information** including cast, crew, and ratings  
-- 📊 **Browse popular movies** as the default view
+- 🎬 **View detailed movie information** including cast, crew, and ratings
 - 🤖 **AI-powered assistance** for natural language movie queries
 
 ## Features
 
 ### Essential AI Tools
-The tool includes three core AI function declarations:
+
+The tool includes two core AI function declarations:
 
 1. **search_movies** - Search for movies by title or keywords
-2. **get_movie_details** - Get detailed information about specific movies  
-3. **get_popular_movies** - Fetch currently popular movies
+2. **get_movie_details** - Get detailed information about specific movies
 
 ### Clean Interface
+
 - **Single-view layout**: Streamlined movie grid and details view
 - **Real-time AI interaction**: Voice and text communication with Gemini
 - **Visual movie cards**: Clean display with posters, ratings, and details
@@ -27,10 +27,12 @@ The tool includes three core AI function declarations:
 ## Setup
 
 ### Prerequisites
+
 1. **TMDb API Key**: Get one from [TMDb API Settings](https://www.themoviedb.org/settings/api)
 2. **Google Gemini API Key**: Get one from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### Environment Configuration
+
 Add these variables to your `.env.local` file:
 
 ```bash
@@ -44,6 +46,7 @@ REACT_APP_GEMINI_API_KEY=your_gemini_api_key_here
 ```
 
 ### Installation
+
 The tool is integrated into the project:
 
 1. Set up your environment variables
@@ -54,32 +57,34 @@ The tool is integrated into the project:
 ## Usage
 
 ### Voice Commands
+
 Interact with the AI using natural language:
 
-- *"Show me popular movies"*
-- *"Search for Tom Hanks movies"*
-- *"Tell me about Inception"*
-- *"Find sci-fi movies from 2023"*
+- _"Search for Tom Hanks movies"_
+- _"Tell me about Inception"_
+- _"Find sci-fi movies from 2023"_
 
 ### Interface Navigation
-1. **Browse Movies**: Default view shows popular movies in a grid
-2. **Search**: Ask the AI to search for specific movies
-3. **View Details**: Click any movie card to see detailed information
-4. **Voice Interaction**: Use the microphone for hands-free browsing
+
+1. **Search**: Ask the AI to search for specific movies
+2. **View Details**: Click any movie card to see detailed information
+3. **Voice Interaction**: Use the microphone for hands-free browsing
 
 ## Technical Architecture
 
 ### Components
+
 - **MovieBrowser**: Main component with AI integration and UI
 - **MovieCard**: Reusable movie display component
 - **MovieDetails**: Detailed movie information view
 
 ### API Endpoints (Streamlined)
+
 - `/api/movies/search` - Movie search
-- `/api/movies/popular` - Popular movies  
 - `/api/movies/[id]` - Movie details
 
 ### Data Flow
+
 1. User interacts with AI via voice/text
 2. AI uses tool functions to query TMDb API
 3. Results update the interface automatically
@@ -95,32 +100,30 @@ Interact with the AI using natural language:
 
 ## Example Interactions
 
-### Browse Popular Movies
-```
-User: "Show me what's popular right now"
-AI: [Uses get_popular_movies tool and displays grid]
-```
-
 ### Search Movies
+
 ```
 User: "Find movies with Ryan Gosling"
 AI: [Uses search_movies with "Ryan Gosling" query]
 ```
 
 ### View Details
+
 ```
-User: "Tell me about Blade Runner 2049"  
+User: "Tell me about Blade Runner 2049"
 AI: [Searches for movie, then shows details using get_movie_details]
 ```
 
 ## Performance Benefits
 
 ### Reduced Complexity
-- **3 core functions** instead of 5+ complex tools
-- **Single component** instead of multiple UI pieces
-- **Essential API routes** only (3 instead of 6+)
 
-### Improved Efficiency  
+- **2 core functions** instead of 5+ complex tools
+- **Single component** instead of multiple UI pieces
+- **Essential API routes** only (2 instead of 6+)
+
+### Improved Efficiency
+
 - **Faster load times** with streamlined code
 - **Better maintainability** with focused functionality
 - **Cleaner AI interactions** with simplified tool set
@@ -128,21 +131,26 @@ AI: [Searches for movie, then shows details using get_movie_details]
 ## Customization
 
 ### Adding Features
+
 To extend functionality:
+
 1. Add new function declaration in `movie-browser.tsx`
 2. Create corresponding API endpoint
 3. Handle the tool call in the `onToolCall` function
 
 ### Styling
+
 Uses Tailwind CSS for easy customization of:
+
 - Color schemes
-- Layout responsiveness  
+- Layout responsiveness
 - Component spacing
 - Typography
 
 ## Contributing
 
 When contributing:
+
 1. Maintain the streamlined approach
 2. Focus on core movie functionality
 3. Ensure TypeScript compliance

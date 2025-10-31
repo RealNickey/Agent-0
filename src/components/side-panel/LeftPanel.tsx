@@ -13,7 +13,9 @@ import {
   RiTimerLine,
   RiUser3Line,
   RiLogoutBoxRLine,
+  RiSparklingLine,
 } from "react-icons/ri";
+import { useUsage } from "../../contexts/UsageContext";
 
 /**
  * LeftPanel: a simple collapsible side panel (no console content)
@@ -34,8 +36,16 @@ export default function LeftPanel() {
   );
   const [accountOpen, setAccountOpen] = useState(false);
 
-  const { user, isSignedIn, signOut, openSignIn, openUserProfile } =
-    useClerkData();
+  const { user, isSignedIn } = useUser();
+  const { signOut, openSignIn, openUserProfile } = useClerk();
+  
+  // Usage tracking for anonymous users
+  const {
+    isAnonymous,
+    remainingMessages,
+    messageLimit,
+    usagePercentage,
+  } = useUsage();
 
   // Placeholder history items (replace with real data when wired up)
   const history = useMemo(
@@ -264,8 +274,59 @@ export default function LeftPanel() {
         )}
       </nav>
 
+      {/* Usage indicator for anonymous users */}
+      {isAnonymous && open && (
+        <div className="mt-auto px-3 py-3 border-t border-sidebar-border/50">
+          <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+            <div className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground">
+              <RiSparklingLine className="h-4 w-4" />
+              <span>Free Messages</span>
+            </div>
+            
+            <div className="space-y-1.5">
+              <div className="flex items-baseline justify-between text-[11px]">
+                <span className="text-muted-foreground">
+                  {remainingMessages} of {messageLimit} remaining
+                </span>
+                <span className="text-[10px] text-muted-foreground/70">
+                  {Math.round(usagePercentage)}%
+                </span>
+              </div>
+              
+              {/* Progress bar */}
+              <div className="h-1.5 bg-sidebar-accent/20 rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full transition-all duration-300 rounded-full",
+                    usagePercentage >= 80
+                      ? "bg-destructive"
+                      : usagePercentage >= 50
+                      ? "bg-yellow-500"
+                      : "bg-primary"
+                  )}
+                  style={{ width: `${usagePercentage}%` }}
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                try {
+                  openSignIn?.();
+                } catch {
+                  window.location.href = "/";
+                }
+              }}
+              className="w-full mt-2 px-3 py-1.5 text-[11px] font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              Sign in for unlimited access
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Account footer */}
-      <div className="mt-auto relative border-t border-sidebar-border bg-sidebar/80">
+      <div className={cn("relative border-t border-sidebar-border bg-sidebar/80", !isAnonymous && "mt-auto")}>
         {/* Expanded account row */}
         {open ? (
           <div className="p-2">

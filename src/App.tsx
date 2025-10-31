@@ -19,6 +19,7 @@ import { LiveAPIProvider } from "./contexts/LiveAPIContext";
 import SidePanel from "./components/side-panel/SidePanel";
 import UnifiedAssistant from "./tools/tmdb";
 import ControlTray from "./components/control-tray/ControlTray";
+import { Toaster } from "./components/ui/sonner";
 import cn from "classnames";
 import { LiveClientOptions } from "./types";
 
@@ -74,6 +75,7 @@ function App() {
             </ControlTray>
           </main>
         </div>
+        <Toaster />
       </LiveAPIProvider>
     </div>
   );

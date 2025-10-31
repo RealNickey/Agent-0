@@ -1,6 +1,6 @@
 /**
  * Login Prompt Modal
- * 
+ *
  * Displays when anonymous users reach their usage limit.
  * Encourages sign-in for unlimited access.
  */
@@ -57,10 +57,11 @@ export default function LoginPromptModal({
             </div>
           </div>
           <DialogTitle className="text-center text-2xl">
-            You've reached your message limit
+            You&apos;ve reached your message limit
           </DialogTitle>
           <DialogDescription className="text-center text-base pt-2">
-            You've used all {messageLimit} free messages. Sign in to continue with unlimited access!
+            You&apos;ve used all {messageLimit} free messages. Sign in to
+            continue with unlimited access!
           </DialogDescription>
         </DialogHeader>
 
@@ -69,33 +70,37 @@ export default function LoginPromptModal({
             <RiSparklingLine className="h-4 w-4 text-primary" />
             <span>Benefits of signing in:</span>
           </div>
-          
+
           <div className="space-y-2">
             <div className="flex items-start gap-3 text-sm">
               <RiCheckLine className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
               <span>
-                <strong>Unlimited messages</strong> - No restrictions on conversations
+                <strong>Unlimited messages</strong> - No restrictions on
+                conversations
               </span>
             </div>
-            
+
             <div className="flex items-start gap-3 text-sm">
               <RiCheckLine className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
               <span>
-                <strong>Conversation history</strong> - Access your chats from any device
+                <strong>Conversation history</strong> - Access your chats from
+                any device
               </span>
             </div>
-            
+
             <div className="flex items-start gap-3 text-sm">
               <RiCheckLine className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
               <span>
-                <strong>Personalized experience</strong> - Save preferences and settings
+                <strong>Personalized experience</strong> - Save preferences and
+                settings
               </span>
             </div>
-            
+
             <div className="flex items-start gap-3 text-sm">
               <RiCheckLine className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
               <span>
-                <strong>Priority access</strong> - Get faster responses during peak times
+                <strong>Priority access</strong> - Get faster responses during
+                peak times
               </span>
             </div>
           </div>
@@ -109,10 +114,7 @@ export default function LoginPromptModal({
           >
             Maybe later
           </Button>
-          <Button
-            onClick={handleSignIn}
-            className="w-full sm:w-auto"
-          >
+          <Button onClick={handleSignIn} className="w-full sm:w-auto">
             Sign in to continue
           </Button>
         </DialogFooter>

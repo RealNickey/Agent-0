@@ -44,6 +44,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
   );
   const [config, setConfig] = useState<LiveConnectConfig>({});
   const [connected, setConnected] = useState(false);
+  const connectedRef = useRef(false);
   const [volume, setVolume] = useState(0);
 
   // Audio pipeline monitoring
@@ -87,6 +88,10 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
     }
   }, []);
 
+  useEffect(() => {
+    connectedRef.current = connected;
+  }, [connected]);
+
   const startAudioHealthCheck = useCallback(() => {
     if (audioHealthCheckInterval.current) {
       stopAudioHealthCheck();
@@ -100,12 +105,14 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
 
       // If we haven't received audio in a while during an active conversation,
       // this might indicate audio pipeline issues
-      if (timeSinceLastAudio > 60000 && connected) {
+      if (timeSinceLastAudio > 60000 && connectedRef.current) {
         // 60 seconds
         console.warn(
           "Audio pipeline may be disconnected - no audio received recently"
         );
-        connectionToasts.audioError("No audio received recently - pipeline may be disconnected");
+        connectionToasts.audioError(
+          "No audio received recently - pipeline may be disconnected"
+        );
 
         // Try to validate session
         if (!client.validateSession()) {
@@ -125,7 +132,7 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
         }
       }
     }, 30000); // Check every 30 seconds
-  }, [connected, client, stopAudioHealthCheck]);
+  }, [client, stopAudioHealthCheck]);
 
   useEffect(() => {
     const onOpen = () => {
@@ -210,7 +217,8 @@ export function useLiveAPI(options: LiveClientOptions): UseLiveAPIResults {
       client.disconnect();
       await client.connect(model, config);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
       connectionToasts.connectionError(errorMessage);
       throw error;
     }

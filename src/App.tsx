@@ -16,7 +16,6 @@
 
 import { useRef, useState } from "react";
 import { LiveAPIProvider } from "./contexts/LiveAPIContext";
-import SidePanel from "./components/side-panel/SidePanel";
 import UnifiedAssistant from "./tools/tmdb";
 import ControlTray from "./components/control-tray/ControlTray";
 import { Toaster } from "./components/ui/sonner";
@@ -44,7 +43,6 @@ function App() {
     <div className="App">
       <LiveAPIProvider options={apiOptions}>
         <div className="streaming-console bg-neutral-15 text-gray-300 flex h-screen w-screen [&_a]:text-gray-300 [&_.disabled]:pointer-events-none [&_.disabled>*]:pointer-events-none">
-          <SidePanel />
           <main className="relative flex flex-col items-center justify-center flex-grow gap-4 max-w-full overflow-hidden">
             <div className="absolute top-4 left-4 z-10 px-3 py-2 rounded bg-gray-700 text-xs text-gray-200">
               Unified assistant active (movies • search • charts)

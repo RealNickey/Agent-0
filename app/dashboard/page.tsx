@@ -4,13 +4,11 @@ import dynamic from "next/dynamic";
 import cn from "classnames";
 import { useRef, useState } from "react";
 import { LiveClientOptions } from "../../src/types";
-import { ThemeToggle } from "../../src/components/ui/theme-toggle";
 import { Toaster } from "../../src/components/ui/sonner";
 const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
   ssr: false,
 });
 import SettingsDialog from "../../src/components/settings-dialog/SettingsDialog";
-import IntegrationsButton from "../../src/components/integrations/IntegrationsButton";
 import { motion, AnimatePresence } from "framer-motion";
 
 const LiveAPIProvider = dynamic(
@@ -105,20 +103,9 @@ export default function DashboardPage() {
               <OrbOverlay />
             </div>
 
-            {/* Top controls aligned to sidebars */}
-            <div className="w-full h-12 shrink-0 border-b border-border bg-card/80 backdrop-blur supports-[backdrop-filter]:backdrop-blur shadow-sm px-3 flex items-center justify-between">
-              {/* Just after left sidebar */}
-              <div className="flex gap-2 text-sm text-muted-foreground">
-                <span>
-                  Unified assistant: movies, search & charts auto-selected
-                </span>
-              </div>
-              {/* Controls on the right side */}
-              <div className="flex items-center gap-2">
-                <IntegrationsButton />
-                <SettingsDialog />
-                <ThemeToggle />
-              </div>
+            {/* Settings button on top right */}
+            <div className="absolute top-4 right-4 z-30">
+              <SettingsDialog />
             </div>
 
             <MainContentArea videoRef={videoRef} videoStream={videoStream} />

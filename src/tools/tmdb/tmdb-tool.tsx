@@ -240,6 +240,8 @@ Guidelines:
           case "search_movies":
             const { query, page = 1, year } = fc.args as any;
             toolToasts.searchStarted(query);
+            // Clear previous data before new search
+            setDisplayData({});
             result = await makeAPICall("/api/movies/search", {
               q: query,
               page,
@@ -254,6 +256,8 @@ Guidelines:
             break;
 
           case "get_movie_details":
+            // Clear previous data before new details
+            setDisplayData({});
             const { movie_id } = fc.args as any;
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
             if (detailsResult.success) {
@@ -265,12 +269,14 @@ Guidelines:
             break;
 
           case "render_altair":
+            // Clear previous data before new chart
+            setDisplayData({});
             // Accept the spec string and update local state; acknowledge success.
             const { json_graph } = fc.args as any;
             try {
               // Validate it parses; if not, return error
               JSON.parse(json_graph);
-              setDisplayData((d) => ({ ...d, altairSpec: json_graph }));
+              setDisplayData({ altairSpec: json_graph });
               result = { success: true, data: { rendered: true } };
             } catch (e: any) {
               result = {
@@ -303,23 +309,19 @@ Guidelines:
       }, 100);
     };
 
+    const onClose = () => {
+      // Clear canvas and close it when call ends
+      setDisplayData({});
+      setToolUIActive(false);
+    };
+
     client.on("toolcall", onToolCall);
+    client.on("close", onClose);
     return () => {
       client.off("toolcall", onToolCall);
+      client.off("close", onClose);
     };
   }, [client, setToolUIActive]);
-
-  // Auto-hide tool UI when no content is displayed
-  useEffect(() => {
-    const hasContent =
-      (Array.isArray(displayData.movies) && displayData.movies.length > 0) ||
-      displayData.movieDetails ||
-      displayData.altairSpec;
-
-    if (!hasContent) {
-      setToolUIActive(false);
-    }
-  }, [displayData, setToolUIActive]);
 
   return (
     <div className="tmdb-tool-container h-full w-full">
@@ -375,21 +377,17 @@ Guidelines:
           >
             <div className="h-full bg-card border border-border rounded-2xl shadow-lg overflow-hidden">
               <div className="h-full overflow-auto p-6">
-                <div className="text-sm text-muted-foreground mb-4">
-                  Tool Results
-                </div>
-
                 {/* Tool content */}
                 {Array.isArray(displayData.movies) &&
                   displayData.movies.length > 0 && (
                     <motion.div
-                      className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+                      className="grid grid-cols-2 lg:grid-cols-3 gap-1"
                       initial={{ opacity: 0, scale: 0.9 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ delay: 0.3 }}
                     >
                       {displayData.movies
-                        .slice(0, 6)
+                        .slice(0, 9)
                         .map((m: any, index: number) => {
                           const ui = mapToUIMovie(m);
                           return (
@@ -397,7 +395,11 @@ Guidelines:
                               key={ui.id}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.3 + index * 0.1 }}
+                              transition={{ delay: 0.3 + index * 0.05 }}
+                              className="transform scale-[0.45] origin-top"
+                              style={{
+                                marginBottom: "-58%",
+                              }}
                             >
                               <SharedMovieCard movie={ui} />
                             </motion.div>
@@ -425,10 +427,10 @@ Guidelines:
                   </motion.div>
                 )}
 
-                {/* Altair chart area */}
+                {/* Altair chart area - 80% of canvas width */}
                 {displayData.altairSpec && (
                   <motion.div
-                    className="mt-6"
+                    className="mt-6 w-[80%] mx-auto"
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     transition={{ delay: 0.5 }}
@@ -450,71 +452,15 @@ Guidelines:
           </motion.div>
         )}
 
-        {/* Normal content area - only show when tool UI is not active */}
+        {/* Content area when tool UI is not active - empty/centered state */}
         {!toolUIActive && (
           <motion.div
-            className="w-full"
+            className="w-full h-full flex items-center justify-center"
             initial={{ opacity: 1 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            {/* Only render cards when movies are present; no default browser */}
-            {Array.isArray(displayData.movies) &&
-              displayData.movies.length > 0 && (
-                <motion.div
-                  className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0 }}
-                >
-                  {displayData.movies
-                    .slice(0, 6)
-                    .map((m: any, index: number) => {
-                      const ui = mapToUIMovie(m);
-                      return (
-                        <motion.div
-                          key={ui.id}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <SharedMovieCard movie={ui} />
-                        </motion.div>
-                      );
-                    })}
-                </motion.div>
-              )}
-
-            {/* Optional details view if tool returned it */}
-            {displayData.movieDetails && (
-              <motion.div
-                className="max-w-4xl mx-auto"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <div className="bg-card rounded-xl p-6">
-                  <h2 className="text-2xl font-bold text-foreground mb-2">
-                    {displayData.movieDetails.title}
-                  </h2>
-                  <p className="text-muted-foreground">
-                    {displayData.movieDetails.overview}
-                  </p>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Altair chart area */}
-            {displayData.altairSpec && (
-              <motion.div
-                className="mt-6"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2 }}
-              >
-                <AltairEmbed specString={displayData.altairSpec} />
-              </motion.div>
-            )}
+            {/* Empty state - no message needed */}
           </motion.div>
         )}
       </motion.div>

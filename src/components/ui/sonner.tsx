@@ -1,38 +1,35 @@
-"use client"
+"use client";
 
-import { useTheme } from "next-themes"
-import { Toaster as Sonner, ToasterProps } from "sonner"
+import { useTheme } from "next-themes";
+import { Toaster as Sonner, ToasterProps } from "sonner";
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  const { theme = "system" } = useTheme();
 
   return (
     <Sonner
       theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      style={
-        {
-          "--normal-bg": "var(--Neutral-20)",
-          "--normal-text": "var(--Neutral-80)",
-          "--normal-border": "var(--Neutral-30)",
-          "--success-bg": "var(--Green-700)",
-          "--success-text": "var(--Green-500)",
-          "--success-border": "var(--Green-500)",
-          "--error-bg": "var(--Red-700)",
-          "--error-text": "var(--Red-400)",
-          "--error-border": "var(--Red-500)",
-          "--warning-bg": "var(--Blue-800)",
-          "--warning-text": "var(--Blue-400)",
-          "--warning-border": "var(--Blue-500)",
-        } as React.CSSProperties
-      }
-      position="bottom-right"
+      position="top-right"
       expand={true}
-      richColors={true}
-      closeButton={true}
+      closeButton={false}
+      toastOptions={{
+        classNames: {
+          toast: "border shadow-lg",
+          title: "font-semibold",
+          description: "text-sm opacity-90",
+          success:
+            "!bg-green-50 dark:!bg-green-950 !text-green-900 dark:!text-green-100 !border-green-200 dark:!border-green-800",
+          error:
+            "!bg-red-50 dark:!bg-red-950 !text-red-900 dark:!text-red-100 !border-red-200 dark:!border-red-800",
+          warning:
+            "!bg-yellow-50 dark:!bg-yellow-950 !text-yellow-900 dark:!text-yellow-100 !border-yellow-200 dark:!border-yellow-800",
+          info: "!bg-blue-50 dark:!bg-blue-950 !text-blue-900 dark:!text-blue-100 !border-blue-200 dark:!border-blue-800",
+        },
+      }}
       {...props}
     />
-  )
-}
+  );
+};
 
-export { Toaster }
+export { Toaster };

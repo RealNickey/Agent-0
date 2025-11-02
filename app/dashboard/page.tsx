@@ -22,42 +22,29 @@ const LiveAPIProvider = dynamic(
 const UnifiedAssistant = dynamic(() => import("../../src/tools/tmdb"), {
   ssr: false,
 });
-const ControlTray = dynamic(
-  () => import("../../src/components/control-tray/ControlTray"),
+const ConversationBar = dynamic(
+  () =>
+    import("../../src/components/ui/conversation-bar").then((mod) => ({
+      default: mod.ConversationBar,
+    })),
   { ssr: false }
 );
 import { AccountWidget } from "../../src/components/ui/account-widget";
 import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
 
 // Main content area component that can access context
-const MainContentArea = ({
-  videoRef,
-  videoStream,
-}: {
-  videoRef: any;
-  videoStream: any;
-}) => {
+const MainContentArea = () => {
   const { toolUIActive } = useLiveAPIContext();
 
   return (
     <div className="main-app-area flex flex-1 items-center justify-center w-full relative">
       {/* Unified assistant renders movies & charts */}
       <UnifiedAssistant />
-      <video
-        className={cn("stream flex-grow max-w-[90%] rounded-[32px] max-h-fit", {
-          hidden: !videoRef.current || !videoStream,
-        })}
-        ref={videoRef}
-        autoPlay
-        playsInline
-      />
     </div>
   );
 };
 
 export default function DashboardPage() {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoStream, setVideoStream] = useState<MediaStream | null>(null);
   // Unified experience, no manual tool selection
   // Overlay that consumes context under the provider
   const OrbOverlay = () => {
@@ -108,16 +95,9 @@ export default function DashboardPage() {
               <SettingsDialog />
             </div>
 
-            <MainContentArea videoRef={videoRef} videoStream={videoStream} />
+            <MainContentArea />
 
-            <ControlTray
-              videoRef={videoRef}
-              supportsVideo={true}
-              onVideoStreamChange={setVideoStream}
-              enableEditingSettings={false}
-            >
-              {/* put your own buttons here */}
-            </ControlTray>
+            <ConversationBar className="absolute bottom-0 left-0 right-0 z-30" />
           </main>
         </div>
         <Toaster />

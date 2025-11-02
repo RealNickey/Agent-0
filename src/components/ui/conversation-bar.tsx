@@ -14,7 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { LiveWaveform } from "@/components/ui/live-waveform";
+import { VoiceButton } from "@/components/ui/voice-button";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { useLiveAPIContext } from "@/contexts/LiveAPIContext";
@@ -83,6 +83,13 @@ export const ConversationBar = React.forwardRef<
     const [textInput, setTextInput] = React.useState("");
     const [inVolume, setInVolume] = React.useState(0);
     const [audioRecorder] = React.useState(() => new AudioRecorder());
+    const [recordingFromSpace, setRecordingFromSpace] = React.useState(false);
+    const [isSpacePressed, setIsSpacePressed] = React.useState(false);
+    const spaceDownTimeRef = React.useRef<number>(0);
+    const lastSpacePressTimeRef = React.useRef<number>(0);
+    const spacePressCountRef = React.useRef<number>(0);
+    const spacePressTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+    const wasManuallyMutedRef = React.useRef<boolean>(false);
 
     // VAD configuration
     const VAD_SILENCE_MS = 1000;
@@ -95,6 +102,7 @@ export const ConversationBar = React.forwardRef<
     React.useEffect(() => {
       if (connected) {
         setAgentState("connected");
+        setIsMuted(false); // Unmute when connected
         onConnect?.();
       } else {
         setAgentState("disconnected");
@@ -143,8 +151,8 @@ export const ConversationBar = React.forwardRef<
         }
       };
 
-      // Only record audio when connected, not muted, and keyboard is closed (voice mode)
-      if (connected && !isMuted && !keyboardOpen && audioRecorder) {
+      // Only record audio when connected, not muted, and keyboard is closed (voice mode) or recording from spacebar
+      if ((connected && !isMuted && !keyboardOpen) || recordingFromSpace) {
         audioRecorder.on("data", onData).on("volume", onVolume).start();
 
         // VAD interval for silence detection
@@ -184,6 +192,7 @@ export const ConversationBar = React.forwardRef<
       audioRecorder,
       VAD_MIN_VOLUME,
       VAD_SILENCE_MS,
+      recordingFromSpace,
     ]);
 
     const startConversation = React.useCallback(async () => {
@@ -258,6 +267,120 @@ export const ConversationBar = React.forwardRef<
       [handleSendText]
     );
 
+    // Spacebar interactions: 1 press starts call, 2 presses end call, hold mutes and enables push-to-talk
+    React.useEffect(() => {
+      const handleGlobalKeyDown = (e: KeyboardEvent) => {
+        // Only handle spacebar when not typing in textarea or input
+        if (
+          e.code === "Space" &&
+          !(e.target instanceof HTMLTextAreaElement) &&
+          !(e.target instanceof HTMLInputElement)
+        ) {
+          if (spaceDownTimeRef.current === 0) {
+            e.preventDefault();
+            setIsSpacePressed(true);
+            spaceDownTimeRef.current = Date.now();
+          }
+        }
+      };
+
+      const handleGlobalKeyUp = (e: KeyboardEvent) => {
+        if (
+          e.code === "Space" &&
+          !(e.target instanceof HTMLTextAreaElement) &&
+          !(e.target instanceof HTMLInputElement)
+        ) {
+          e.preventDefault();
+          setIsSpacePressed(false);
+          const pressDuration = Date.now() - spaceDownTimeRef.current;
+          spaceDownTimeRef.current = 0;
+
+          // If held for more than 300ms, it's push-to-talk
+          if (pressDuration > 300 && connected) {
+            // End push-to-talk recording and mute
+            setRecordingFromSpace(false);
+            client.endAudioStream();
+            // Mute after releasing spacebar
+            setIsMuted(true);
+            wasManuallyMutedRef.current = true;
+          } else {
+            // Short press - count clicks
+            const now = Date.now();
+            if (now - lastSpacePressTimeRef.current < 400) {
+              // Double press detected
+              spacePressCountRef.current = 2;
+              if (spacePressTimeoutRef.current) {
+                clearTimeout(spacePressTimeoutRef.current);
+                spacePressTimeoutRef.current = null;
+              }
+
+              if (connected) {
+                // End call on double press
+                handleEndSession();
+              }
+              spacePressCountRef.current = 0;
+            } else {
+              // First press
+              spacePressCountRef.current = 1;
+              lastSpacePressTimeRef.current = now;
+
+              // Wait to see if there's a second press
+              if (spacePressTimeoutRef.current) {
+                clearTimeout(spacePressTimeoutRef.current);
+              }
+              spacePressTimeoutRef.current = setTimeout(() => {
+                if (spacePressCountRef.current === 1) {
+                  // Single press action
+                  if (!connected && agentState === "disconnected") {
+                    startConversation();
+                  }
+                }
+                spacePressCountRef.current = 0;
+              }, 400);
+            }
+          }
+        }
+      };
+
+      // Handle hold for push-to-talk (unmute and record during hold)
+      const holdCheckInterval = setInterval(() => {
+        if (spaceDownTimeRef.current > 0 && connected) {
+          const holdDuration = Date.now() - spaceDownTimeRef.current;
+          if (holdDuration > 300 && !recordingFromSpace) {
+            // Start push-to-talk: unmute and start recording
+            setIsMuted(false);
+            setRecordingFromSpace(true);
+          }
+        }
+      }, 50);
+
+      document.addEventListener("keydown", handleGlobalKeyDown);
+      document.addEventListener("keyup", handleGlobalKeyUp);
+
+      return () => {
+        document.removeEventListener("keydown", handleGlobalKeyDown);
+        document.removeEventListener("keyup", handleGlobalKeyUp);
+        clearInterval(holdCheckInterval);
+        if (spacePressTimeoutRef.current) {
+          clearTimeout(spacePressTimeoutRef.current);
+        }
+      };
+    }, [
+      connected,
+      agentState,
+      startConversation,
+      client,
+      handleEndSession,
+      isMuted,
+    ]);
+
+    // Handle voice button click
+    const handleVoiceButtonClick = React.useCallback(() => {
+      if (!connected && agentState === "disconnected") {
+        startConversation();
+      }
+    }, [connected, agentState, startConversation]);
+
     React.useEffect(() => {
       return () => {
         if (connected) {
@@ -271,58 +394,75 @@ export const ConversationBar = React.forwardRef<
         ref={ref}
         className={cn("flex w-full items-end justify-center p-4", className)}
       >
-        <Card className="m-0 w-full max-w-2xl gap-0 border border-slate-200 dark:border-slate-700 p-0 shadow-xl bg-white dark:bg-slate-900">
+        <Card
+          className={cn(
+            "m-0 w-full gap-0 p-0 shadow-xl bg-white dark:bg-slate-900",
+            "transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] transform-gpu",
+            isConnected ? "max-w-2xl" : "max-w-sm",
+            isSpacePressed && "scale-[0.99] shadow-2xl",
+            recordingFromSpace && "ring-2 ring-green-500/30"
+          )}
+        >
           <div className="flex flex-col-reverse">
             <div>
               {keyboardOpen && (
                 <Separator className="bg-slate-200 dark:bg-slate-700" />
               )}
               <div className="flex items-center justify-between gap-2 p-2">
-                <div className="h-8 w-[120px] md:h-10">
-                  <div
-                    className={cn(
-                      "flex h-full items-center gap-2 rounded-lg py-1 px-2",
-                      "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
-                    )}
-                  >
-                    <div className="h-full flex-1">
-                      <div
-                        className={cn(
-                          "relative flex h-full w-full shrink-0 items-center justify-center overflow-hidden rounded-md",
-                          waveformClassName
-                        )}
-                      >
-                        <LiveWaveform
-                          key={
-                            agentState === "disconnected" ? "idle" : "active"
-                          }
-                          active={isConnected && !isMuted && !keyboardOpen}
-                          processing={agentState === "connecting"}
-                          barWidth={3}
-                          barGap={1}
-                          barRadius={4}
-                          fadeEdges={true}
-                          fadeWidth={24}
-                          sensitivity={1.8}
-                          smoothingTimeConstant={0.85}
-                          height={20}
-                          mode="static"
-                          className={cn(
-                            "h-full w-full transition-opacity duration-300",
-                            agentState === "disconnected" && "opacity-0"
-                          )}
-                        />
-                        {agentState === "disconnected" && (
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium">
-                              Gemini Live
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+                <VoiceButton
+                  state={
+                    agentState === "connecting"
+                      ? "processing"
+                      : agentState === "connected" &&
+                        ((connected && !isMuted && !keyboardOpen) ||
+                          recordingFromSpace)
+                      ? "recording"
+                      : "idle"
+                  }
+                  trailing={
+                    <span
+                      className={cn(
+                        "px-3 py-1 rounded-md text-xs font-bold transition-all duration-200",
+                        "bg-gradient-to-r from-green-500 to-emerald-500",
+                        "text-white shadow-lg shadow-green-500/50",
+                        isSpacePressed && "scale-95 shadow-green-500/70",
+                        recordingFromSpace && "animate-pulse"
+                      )}
+                    >
+                      ⌥Space
+                    </span>
+                  }
+                  onPress={handleVoiceButtonClick}
+                  variant="outline"
+                  size="default"
+                  className={cn(
+                    "h-10 min-w-[140px] md:h-12 md:min-w-[160px]",
+                    "bg-gradient-to-br from-slate-800 via-slate-850 to-slate-900",
+                    "dark:from-slate-900 dark:via-slate-950 dark:to-black",
+                    "border-2 transition-all duration-300 ease-out",
+                    // globally remove browser focus outline/ring for this button
+                    "focus:outline-none focus:ring-0 focus-visible:ring-0",
+                    agentState === "disconnected" &&
+                      "border-slate-600/50 dark:border-slate-700/50 hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/20",
+                    agentState === "connecting" &&
+                      "border-blue-500/50 animate-pulse",
+                    // Remove visible border when connected (keep shadow/glow only)
+                    agentState === "connected" &&
+                      !recordingFromSpace &&
+                      "border-0 shadow-lg shadow-green-500/30",
+                    recordingFromSpace &&
+                      "border-green-400 shadow-xl shadow-green-400/50 ring-2 ring-green-400/30",
+                    "text-slate-100 dark:text-slate-200",
+                    "hover:scale-[1.02] active:scale-[0.98]",
+                    isSpacePressed && "border-0 scale-95 shadow-2xl",
+                    "transform-gpu"
+                  )}
+                  waveformClassName={waveformClassName}
+                  disabled={
+                    agentState === "connecting" ||
+                    agentState === "disconnecting"
+                  }
+                />
                 <div className="flex items-center">
                   <Button
                     variant="ghost"

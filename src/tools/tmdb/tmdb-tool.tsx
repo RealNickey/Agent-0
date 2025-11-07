@@ -478,9 +478,7 @@ Guidelines:
               setInitialSeconds(newSeconds);
               setTimerKey((prev) => prev + 1);
               // Keep timer running if it was running
-              if (isStarted && !isPaused) {
-                setIsPaused(false);
-              }
+              // No need to set isPaused to false if it's already running
               result = {
                 success: true,
                 data: {

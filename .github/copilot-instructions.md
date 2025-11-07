@@ -18,6 +18,8 @@ Concise, project-specific guidance for this repo (Next.js 15 + client-side multi
   - Clerk: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` (middleware auto-enables only if key starts with `pk_`).
   - TMDb: `TMDB_ACCESS_TOKEN` (preferred) or `TMDB_API_KEY`.
 - Authentication: Landing page (`app/page.tsx`) redirects signed-in users to `app/dashboard/page.tsx`; middleware guards API & app routes when Clerk configured.
+- Testing: No test suite currently configured (test files exist in `src/` but setup needs restoration if activating).
+- Debugging: Check browser console for `client.*` and `server.*` logs from `GenAILiveClient`; use `StreamingLog` events for detailed websocket diagnostics.
 
 ## 3. Conventions & Patterns
 
@@ -28,13 +30,18 @@ Concise, project-specific guidance for this repo (Next.js 15 + client-side multi
 - Audio: Add worklets via `audioStreamer.addWorklet(name, src, handler)`; reuse existing context IDs to avoid multiple AudioContext instances (browser autoplay policies).
 - Health & reconnection: `GenAILiveClient` auto schedules exponential backoff (max 3) on unexpected close; don't layer duplicate reconnect loops.
 - Caching strategy: Use `export const revalidate = <seconds>` or `dynamic = 'force-dynamic'` in `app/api/*` routes. Follow existing TTLs (search=120s, details=3600s) for consistency unless requirements change.
+- Context nesting: `app/providers.tsx` wraps app with `UsageProvider` → `LiveAPIProvider`; both use Clerk's `useUser()`. Usage tracking intercepts `client.send()` for anonymous users (see `UsageContext.tsx`).
+- Component composition: Dashboard (`app/dashboard/page.tsx`) uses nested client components under `LiveAPIProvider` to access context (e.g., `OrbOverlay`, `MainContentArea`). Never try to use `useLiveAPIContext()` outside this provider tree.
 
 ## 4. Pitfalls / Gotchas
 
-- `next.config.js` sets `ignoreBuildErrors: true`; type errors won’t fail CI—manually review Typescript before large refactors.
-- Audio worklet registration: Ensure unique `workletName`; registry prevents duplicates but merges handlers—remove listeners if discarding components to avoid leaks.
+- `next.config.js` sets `ignoreBuildErrors: true`; type errors won't fail CI—manually review Typescript before large refactors.
+- Audio worklet registration: Ensure unique `workletName`; registry prevents duplicates but merges handlers—remove listeners if discarding components to avoid leaks (see `audioworklet-registry.ts`).
 - Avoid importing `@google/genai` server features directly in serverless edge runtime unless confirmed compatible; current usage is client websocket only.
 - Ensure any new API route calling TMDb invokes `assertTmdbEnv()` early to give clear error.
+- Clerk middleware conditional: Only active if `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` starts with `pk_` (see `middleware.ts`). Misconfigured keys silently disable auth.
+- Usage tracking limits: Anonymous users limited to N messages (tracked via localStorage in `usage-tracker.ts`); `LiveAPIContext` wraps `client.send()` to enforce. Don't bypass this wrapper.
+- Vega-Lite/canvas aliasing: Webpack config forces browser build of `vega-canvas` to prevent server-side dependencies breaking client builds.
 
 ## 5. Adding a New Tool (Example Skeleton)
 

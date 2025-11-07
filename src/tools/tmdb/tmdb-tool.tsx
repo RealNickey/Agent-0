@@ -299,7 +299,7 @@ export function TMDbTool() {
   const [initialSeconds, setInitialSeconds] = useState(DEFAULT_TIMER_SECONDS);
   const [timerKey, setTimerKey] = useState(0);
   const [currentSeconds, setCurrentSeconds] = useState(DEFAULT_TIMER_SECONDS);
-  
+
   // Display state
   const [displayContent, setDisplayContent] = useState<DisplayContent>(null);
   const [displayData, setDisplayData] = useState<{
@@ -451,8 +451,8 @@ Guidelines:
               setInitialSeconds(seconds);
               setCurrentSeconds(seconds);
               setTimerKey((prev) => prev + 1);
-              setIsStarted(false);
-              setIsPaused(true);
+              setIsStarted(true);
+              setIsPaused(false);
               result = {
                 success: true,
                 data: {
@@ -477,6 +477,10 @@ Guidelines:
               setCurrentSeconds(newSeconds);
               setInitialSeconds(newSeconds);
               setTimerKey((prev) => prev + 1);
+              // Keep timer running if it was running
+              if (isStarted && !isPaused) {
+                setIsPaused(false);
+              }
               result = {
                 success: true,
                 data: {
@@ -501,8 +505,12 @@ Guidelines:
               setTimerKey((prev) => prev + 1);
               setIsStarted(false);
               setIsPaused(true);
-              setInitialSeconds(newMode === "countdown" ? DEFAULT_TIMER_SECONDS : 0);
-              setCurrentSeconds(newMode === "countdown" ? DEFAULT_TIMER_SECONDS : 0);
+              setInitialSeconds(
+                newMode === "countdown" ? DEFAULT_TIMER_SECONDS : 0
+              );
+              setCurrentSeconds(
+                newMode === "countdown" ? DEFAULT_TIMER_SECONDS : 0
+              );
               result = {
                 success: true,
                 data: {
@@ -520,7 +528,11 @@ Guidelines:
 
           // Movie functions
           case "search_movies":
-            const { query, page = 1, year } = fc.args as unknown as SearchMoviesArgs;
+            const {
+              query,
+              page = 1,
+              year,
+            } = fc.args as unknown as SearchMoviesArgs;
             toolToasts.searchStarted(query);
             // Clear previous data before new search
             setDisplayContent("movies");
@@ -672,7 +684,9 @@ Guidelines:
                     transition={{ delay: 0.3 }}
                   >
                     <div className="text-2xl font-semibold text-foreground mb-2">
-                      {timerMode === "countdown" ? "Countdown Timer" : "Stopwatch"}
+                      {timerMode === "countdown"
+                        ? "Countdown Timer"
+                        : "Stopwatch"}
                     </div>
                     <ArcCountdown
                       key={timerKey}
@@ -680,6 +694,7 @@ Guidelines:
                       radius={160}
                       mode={timerMode}
                       isPaused={isPaused}
+                      onTimeChange={setCurrentSeconds}
                     />
                     <div className="text-sm text-muted-foreground">
                       {!isStarted && "Ready to start"}
@@ -722,23 +737,24 @@ Guidelines:
                   )}
 
                 {/* Movie Details Display */}
-                {displayContent === "movie_details" && displayData.movieDetails && (
-                  <motion.div
-                    className="max-w-4xl mx-auto"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                  >
-                    <div className="bg-card rounded-xl p-6">
-                      <h2 className="text-2xl font-bold text-foreground mb-2">
-                        {displayData.movieDetails.title}
-                      </h2>
-                      <p className="text-muted-foreground">
-                        {displayData.movieDetails.overview}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
+                {displayContent === "movie_details" &&
+                  displayData.movieDetails && (
+                    <motion.div
+                      className="max-w-4xl mx-auto"
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <div className="bg-card rounded-xl p-6">
+                        <h2 className="text-2xl font-bold text-foreground mb-2">
+                          {displayData.movieDetails.title}
+                        </h2>
+                        <p className="text-muted-foreground">
+                          {displayData.movieDetails.overview}
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
 
                 {/* Altair chart area - 80% of canvas width */}
                 {displayContent === "chart" && displayData.altairSpec && (
@@ -755,7 +771,8 @@ Guidelines:
                 {/* Show message if no content */}
                 {!displayContent && (
                   <div className="text-center text-muted-foreground py-8">
-                    No tool results yet. Try asking for movies, charts, or setting a timer!
+                    No tool results yet. Try asking for movies, charts, or
+                    setting a timer!
                   </div>
                 )}
               </div>

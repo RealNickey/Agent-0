@@ -619,7 +619,7 @@ Guidelines:
       client.off("toolcall", onToolCall);
       client.off("close", onClose);
     };
-  }, [client, setToolUIActive, timerMode, isStarted, currentSeconds]);
+  }, [client, setToolUIActive]);
 
   return (
     <div className="tmdb-tool-container h-full w-full">

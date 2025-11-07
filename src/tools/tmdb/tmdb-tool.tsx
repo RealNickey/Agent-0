@@ -13,6 +13,93 @@ import {
   Type,
 } from "@google/genai";
 import { motion } from "framer-motion";
+import ArcCountdown from "../../components/arc-countdown";
+
+// Timer tool declarations
+const startTimerDeclaration: FunctionDeclaration = {
+  name: "start_timer",
+  description: "Start the countdown timer or stopwatch",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+    required: [],
+  },
+};
+
+const stopTimerDeclaration: FunctionDeclaration = {
+  name: "stop_timer",
+  description: "Stop and reset the timer or stopwatch",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+    required: [],
+  },
+};
+
+const pauseTimerDeclaration: FunctionDeclaration = {
+  name: "pause_timer",
+  description: "Pause the running timer or stopwatch",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+    required: [],
+  },
+};
+
+const resumeTimerDeclaration: FunctionDeclaration = {
+  name: "resume_timer",
+  description: "Resume a paused timer or stopwatch",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {},
+    required: [],
+  },
+};
+
+const setTimerDurationDeclaration: FunctionDeclaration = {
+  name: "set_timer_duration",
+  description: "Set the duration for the countdown timer in seconds",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      seconds: {
+        type: Type.NUMBER,
+        description: "Duration in seconds for the countdown timer",
+      },
+    },
+    required: ["seconds"],
+  },
+};
+
+const addTimeDeclaration: FunctionDeclaration = {
+  name: "add_time",
+  description: "Add additional time to the running timer",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      seconds: {
+        type: Type.NUMBER,
+        description: "Number of seconds to add to the timer",
+      },
+    },
+    required: ["seconds"],
+  },
+};
+
+const switchModeDeclaration: FunctionDeclaration = {
+  name: "switch_timer_mode",
+  description: "Switch between countdown timer and stopwatch modes",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      mode: {
+        type: Type.STRING,
+        description: "Mode to switch to: 'countdown' or 'stopwatch'",
+      },
+    },
+    required: ["mode"],
+  },
+};
 
 // Tool declarations for movie-related functions
 const movieSearchDeclaration: FunctionDeclaration = {
@@ -170,7 +257,20 @@ function mapToUIMovie(apiMovie: any): UIMovie {
   };
 }
 
+type TimerMode = "countdown" | "stopwatch";
+type DisplayContent = "timer" | "movies" | "movie_details" | "chart" | null;
+
 export function TMDbTool() {
+  // Timer state
+  const [timerMode, setTimerMode] = useState<TimerMode>("countdown");
+  const [isPaused, setIsPaused] = useState(true);
+  const [isStarted, setIsStarted] = useState(false);
+  const [initialSeconds, setInitialSeconds] = useState(140);
+  const [timerKey, setTimerKey] = useState(0);
+  const [currentSeconds, setCurrentSeconds] = useState(140);
+  
+  // Display state
+  const [displayContent, setDisplayContent] = useState<DisplayContent>(null);
   const [displayData, setDisplayData] = useState<{
     movies?: any[];
     movieDetails?: any;
@@ -190,17 +290,32 @@ export function TMDbTool() {
       systemInstruction: {
         parts: [
           {
-            text: `You are a helpful general assistant with extra movie and charting tools.
+            text: `You are a helpful general assistant with timer, movie search, and charting capabilities.
 
-Available tools:
+Available timer tools:
+- start_timer: Start the countdown timer or stopwatch
+- stop_timer: Stop and reset the timer or stopwatch
+- pause_timer: Pause the running timer or stopwatch
+- resume_timer: Resume a paused timer or stopwatch
+- set_timer_duration: Set the duration for countdown timer in seconds (e.g., 60 for 1 minute, 300 for 5 minutes)
+- add_time: Add additional time to the running timer in seconds
+- switch_timer_mode: Switch between 'countdown' or 'stopwatch' modes
+
+Available movie tools:
 - search_movies: find movies when the user mentions or asks about a film.
 - get_movie_details: fetch basic info (title, overview, poster, runtime/year) for a specific movie id when clarifying or answering questions.
+
+Available charting tools:
 - render_altair: render Altair/Vega-Lite charts for ANY data visualization request. Use this whenever the user asks for a chart/graph/visualization, or when a chart would clarify an answer. Provide a JSON STRING (stringified spec) in 'json_graph'.
 
 Guidelines:
+- Use timer tools when the user asks to set a timer, start a stopwatch, or manage time.
+- The timer is persistent and maintains state across calls.
+- Only activate the timer UI when explicitly called.
 - Charts are not limited to movies. If the user asks for a chart (e.g., "use the graph tool", "plot", "visualize", "chart", "graph"), call render_altair with a sensible, minimal spec based on the described data. If needed, synthesize a tiny example dataset to illustrate the concept, and state that it's illustrative.
 - Do NOT attempt recommendations, reviews, or top‑rated lists (those capabilities are disabled).
 - Keep answers concise and focused. When combining narration with charts, keep the narrative brief and let the visualization carry the detail.
+- When setting a timer, convert user-friendly durations (like "5 minutes") to seconds (300).
 `,
           },
         ],
@@ -209,6 +324,15 @@ Guidelines:
         { googleSearch: {} },
         {
           functionDeclarations: [
+            // Timer tools
+            startTimerDeclaration,
+            stopTimerDeclaration,
+            pauseTimerDeclaration,
+            resumeTimerDeclaration,
+            setTimerDurationDeclaration,
+            addTimeDeclaration,
+            switchModeDeclaration,
+            // Movie tools
             movieSearchDeclaration,
             movieDetailsDeclaration,
             altairRenderDeclaration,
@@ -237,10 +361,138 @@ Guidelines:
         let result: MovieToolResponse;
 
         switch (fc.name) {
+          // Timer functions
+          case "start_timer":
+            setDisplayContent("timer");
+            setIsStarted(true);
+            setIsPaused(false);
+            result = {
+              success: true,
+              data: {
+                action: "started",
+                mode: timerMode,
+                duration: timerMode === "countdown" ? currentSeconds : 0,
+              },
+            };
+            break;
+
+          case "stop_timer":
+            setDisplayContent("timer");
+            setIsStarted(false);
+            setIsPaused(true);
+            setTimerKey((prev) => prev + 1);
+            result = {
+              success: true,
+              data: { action: "stopped" },
+            };
+            break;
+
+          case "pause_timer":
+            setDisplayContent("timer");
+            setIsPaused(true);
+            result = {
+              success: true,
+              data: { action: "paused" },
+            };
+            break;
+
+          case "resume_timer":
+            setDisplayContent("timer");
+            if (isStarted) {
+              setIsPaused(false);
+              result = {
+                success: true,
+                data: { action: "resumed" },
+              };
+            } else {
+              result = {
+                success: false,
+                error: "Timer is not started. Use start_timer first.",
+              };
+            }
+            break;
+
+          case "set_timer_duration":
+            setDisplayContent("timer");
+            const { seconds } = fc.args as any;
+            if (seconds && seconds > 0) {
+              setTimerMode("countdown");
+              setInitialSeconds(seconds);
+              setCurrentSeconds(seconds);
+              setTimerKey((prev) => prev + 1);
+              setIsStarted(false);
+              setIsPaused(true);
+              result = {
+                success: true,
+                data: {
+                  action: "duration_set",
+                  seconds,
+                  minutes: Math.floor(seconds / 60),
+                },
+              };
+            } else {
+              result = {
+                success: false,
+                error: "Invalid duration. Seconds must be greater than 0.",
+              };
+            }
+            break;
+
+          case "add_time":
+            setDisplayContent("timer");
+            const { seconds: addSeconds } = fc.args as any;
+            if (addSeconds && addSeconds > 0) {
+              const newSeconds = currentSeconds + addSeconds;
+              setCurrentSeconds(newSeconds);
+              setInitialSeconds(newSeconds);
+              setTimerKey((prev) => prev + 1);
+              result = {
+                success: true,
+                data: {
+                  action: "time_added",
+                  added_seconds: addSeconds,
+                  total_seconds: newSeconds,
+                },
+              };
+            } else {
+              result = {
+                success: false,
+                error: "Invalid time. Seconds must be greater than 0.",
+              };
+            }
+            break;
+
+          case "switch_timer_mode":
+            setDisplayContent("timer");
+            const { mode: newMode } = fc.args as any;
+            if (newMode === "countdown" || newMode === "stopwatch") {
+              setTimerMode(newMode as TimerMode);
+              setTimerKey((prev) => prev + 1);
+              setIsStarted(false);
+              setIsPaused(true);
+              setInitialSeconds(newMode === "countdown" ? 140 : 0);
+              setCurrentSeconds(newMode === "countdown" ? 140 : 0);
+              result = {
+                success: true,
+                data: {
+                  action: "mode_switched",
+                  mode: newMode,
+                },
+              };
+            } else {
+              result = {
+                success: false,
+                error: "Invalid mode. Use 'countdown' or 'stopwatch'.",
+              };
+            }
+            break;
+
+          // Movie functions
           case "search_movies":
             const { query, page = 1, year } = fc.args as any;
             toolToasts.searchStarted(query);
             // Clear previous data before new search
+            setDisplayContent("movies");
             setDisplayData({});
             result = await makeAPICall("/api/movies/search", {
               q: query,
@@ -257,6 +509,7 @@ Guidelines:
 
           case "get_movie_details":
             // Clear previous data before new details
+            setDisplayContent("movie_details");
             setDisplayData({});
             const { movie_id } = fc.args as any;
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
@@ -270,6 +523,7 @@ Guidelines:
 
           case "render_altair":
             // Clear previous data before new chart
+            setDisplayContent("chart");
             setDisplayData({});
             // Accept the spec string and update local state; acknowledge success.
             const { json_graph } = fc.args as any;
@@ -311,6 +565,7 @@ Guidelines:
 
     const onClose = () => {
       // Clear canvas and close it when call ends
+      setDisplayContent(null);
       setDisplayData({});
       setToolUIActive(false);
     };
@@ -321,7 +576,7 @@ Guidelines:
       client.off("toolcall", onToolCall);
       client.off("close", onClose);
     };
-  }, [client, setToolUIActive]);
+  }, [client, setToolUIActive, timerMode, isStarted, currentSeconds]);
 
   return (
     <div className="tmdb-tool-container h-full w-full">
@@ -377,8 +632,35 @@ Guidelines:
           >
             <div className="h-full bg-card border border-border rounded-2xl shadow-lg overflow-hidden">
               <div className="h-full overflow-auto p-6">
-                {/* Tool content */}
-                {Array.isArray(displayData.movies) &&
+                {/* Timer Display */}
+                {displayContent === "timer" && (
+                  <motion.div
+                    className="h-full flex flex-col items-center justify-center gap-6"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="text-2xl font-semibold text-foreground mb-2">
+                      {timerMode === "countdown" ? "Countdown Timer" : "Stopwatch"}
+                    </div>
+                    <ArcCountdown
+                      key={timerKey}
+                      initialSeconds={initialSeconds}
+                      radius={160}
+                      mode={timerMode}
+                      isPaused={isPaused}
+                    />
+                    <div className="text-sm text-muted-foreground">
+                      {!isStarted && "Ready to start"}
+                      {isStarted && isPaused && "Paused"}
+                      {isStarted && !isPaused && "Running"}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* Movies Display */}
+                {displayContent === "movies" &&
+                  Array.isArray(displayData.movies) &&
                   displayData.movies.length > 0 && (
                     <motion.div
                       className="grid grid-cols-2 lg:grid-cols-3 gap-1"
@@ -408,8 +690,8 @@ Guidelines:
                     </motion.div>
                   )}
 
-                {/* Optional details view if tool returned it */}
-                {displayData.movieDetails && (
+                {/* Movie Details Display */}
+                {displayContent === "movie_details" && displayData.movieDetails && (
                   <motion.div
                     className="max-w-4xl mx-auto"
                     initial={{ opacity: 0, y: 20 }}
@@ -428,7 +710,7 @@ Guidelines:
                 )}
 
                 {/* Altair chart area - 80% of canvas width */}
-                {displayData.altairSpec && (
+                {displayContent === "chart" && displayData.altairSpec && (
                   <motion.div
                     className="mt-6 w-[80%] mx-auto"
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -440,13 +722,11 @@ Guidelines:
                 )}
 
                 {/* Show message if no content */}
-                {!displayData.movies?.length &&
-                  !displayData.movieDetails &&
-                  !displayData.altairSpec && (
-                    <div className="text-center text-muted-foreground py-8">
-                      No tool results yet. Try asking for movies or charts!
-                    </div>
-                  )}
+                {!displayContent && (
+                  <div className="text-center text-muted-foreground py-8">
+                    No tool results yet. Try asking for movies, charts, or setting a timer!
+                  </div>
+                )}
               </div>
             </div>
           </motion.div>

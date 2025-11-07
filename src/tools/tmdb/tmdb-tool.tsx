@@ -174,6 +174,37 @@ interface MovieToolResponse {
   error?: string;
 }
 
+// Timer function call argument interfaces
+interface SetTimerDurationArgs {
+  seconds: number;
+}
+
+interface AddTimeArgs {
+  seconds: number;
+}
+
+interface SwitchTimerModeArgs {
+  mode: "countdown" | "stopwatch";
+}
+
+interface SearchMoviesArgs {
+  query: string;
+  page?: number;
+  year?: number;
+}
+
+interface GetMovieDetailsArgs {
+  movie_id: number;
+  include_reviews?: boolean;
+}
+
+interface RenderAltairArgs {
+  json_graph: string;
+}
+
+// Constants
+const DEFAULT_TIMER_SECONDS = 140; // 2 minutes 20 seconds
+
 // Helper function to make API calls to our Next.js routes
 async function makeAPICall(
   endpoint: string,
@@ -265,9 +296,9 @@ export function TMDbTool() {
   const [timerMode, setTimerMode] = useState<TimerMode>("countdown");
   const [isPaused, setIsPaused] = useState(true);
   const [isStarted, setIsStarted] = useState(false);
-  const [initialSeconds, setInitialSeconds] = useState(140);
+  const [initialSeconds, setInitialSeconds] = useState(DEFAULT_TIMER_SECONDS);
   const [timerKey, setTimerKey] = useState(0);
-  const [currentSeconds, setCurrentSeconds] = useState(140);
+  const [currentSeconds, setCurrentSeconds] = useState(DEFAULT_TIMER_SECONDS);
   
   // Display state
   const [displayContent, setDisplayContent] = useState<DisplayContent>(null);
@@ -414,7 +445,7 @@ Guidelines:
 
           case "set_timer_duration":
             setDisplayContent("timer");
-            const { seconds } = fc.args as any;
+            const { seconds } = fc.args as unknown as SetTimerDurationArgs;
             if (seconds && seconds > 0) {
               setTimerMode("countdown");
               setInitialSeconds(seconds);
@@ -440,7 +471,7 @@ Guidelines:
 
           case "add_time":
             setDisplayContent("timer");
-            const { seconds: addSeconds } = fc.args as any;
+            const { seconds: addSeconds } = fc.args as unknown as AddTimeArgs;
             if (addSeconds && addSeconds > 0) {
               const newSeconds = currentSeconds + addSeconds;
               setCurrentSeconds(newSeconds);
@@ -464,14 +495,14 @@ Guidelines:
 
           case "switch_timer_mode":
             setDisplayContent("timer");
-            const { mode: newMode } = fc.args as any;
+            const { mode: newMode } = fc.args as unknown as SwitchTimerModeArgs;
             if (newMode === "countdown" || newMode === "stopwatch") {
               setTimerMode(newMode as TimerMode);
               setTimerKey((prev) => prev + 1);
               setIsStarted(false);
               setIsPaused(true);
-              setInitialSeconds(newMode === "countdown" ? 140 : 0);
-              setCurrentSeconds(newMode === "countdown" ? 140 : 0);
+              setInitialSeconds(newMode === "countdown" ? DEFAULT_TIMER_SECONDS : 0);
+              setCurrentSeconds(newMode === "countdown" ? DEFAULT_TIMER_SECONDS : 0);
               result = {
                 success: true,
                 data: {
@@ -489,7 +520,7 @@ Guidelines:
 
           // Movie functions
           case "search_movies":
-            const { query, page = 1, year } = fc.args as any;
+            const { query, page = 1, year } = fc.args as unknown as SearchMoviesArgs;
             toolToasts.searchStarted(query);
             // Clear previous data before new search
             setDisplayContent("movies");
@@ -511,7 +542,7 @@ Guidelines:
             // Clear previous data before new details
             setDisplayContent("movie_details");
             setDisplayData({});
-            const { movie_id } = fc.args as any;
+            const { movie_id } = fc.args as unknown as GetMovieDetailsArgs;
             const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
             if (detailsResult.success) {
               setDisplayData({ movieDetails: detailsResult.data });
@@ -526,7 +557,7 @@ Guidelines:
             setDisplayContent("chart");
             setDisplayData({});
             // Accept the spec string and update local state; acknowledge success.
-            const { json_graph } = fc.args as any;
+            const { json_graph } = fc.args as unknown as RenderAltairArgs;
             try {
               // Validate it parses; if not, return error
               JSON.parse(json_graph);

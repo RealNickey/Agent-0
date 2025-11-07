@@ -31,7 +31,7 @@ The Arc Countdown timer tool has been successfully integrated into the assistant
 #### Test 1: Set and Start a Timer
 1. Say or type: "Set a timer for 2 minutes"
 2. **Expected Behavior**:
-   - Agent calls `set_timer_duration(120)` then `start_timer()`
+   - Agent calls `set_timer_duration(120)` (which automatically starts the timer)
    - Timer UI appears showing 02:00
    - Timer begins counting down
    - Visual feedback shows "Running"

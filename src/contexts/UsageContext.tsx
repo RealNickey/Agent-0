@@ -17,30 +17,6 @@ import {
   getUsagePercentage,
 } from "../lib/usage-tracker";
 
-// Check if Clerk is properly configured
-const getClerkKey = () => {
-  if (typeof window === 'undefined') return undefined;
-  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-};
-
-// Safe wrapper that always calls useUser unconditionally
-function useSafeUser() {
-  // Always call the hook unconditionally at the top level (Rules of Hooks requirement)
-  const clerkUserData = useUser();
-  
-  // Check if Clerk is actually configured
-  const publishableKey = getClerkKey();
-  const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
-  
-  // If Clerk is not configured, return safe defaults instead of the Clerk data
-  if (!hasValidClerkKey) {
-    return { isSignedIn: false, user: null, isLoaded: true };
-  }
-  
-  // Return Clerk data if configured
-  return clerkUserData;
-}
-
 interface UsageContextValue {
   messageCount: number;
   remainingMessages: number;
@@ -62,7 +38,7 @@ export interface UsageProviderProps {
 }
 
 export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
-  const { isSignedIn, user } = useSafeUser();
+  const { isSignedIn, user } = useUser();
   const [messageCount, setMessageCount] = useState(0);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
@@ -150,7 +126,20 @@ export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
 export const useUsage = () => {
   const context = useContext(UsageContext);
   if (!context) {
-    throw new Error("useUsage must be used within a UsageProvider");
+    // Return safe defaults when UsageProvider is not available (e.g., when Clerk is not configured)
+    return {
+      messageCount: 0,
+      remainingMessages: Infinity,
+      messageLimit: 0,
+      usagePercentage: 0,
+      hasReachedLimit: false,
+      isAnonymous: false,
+      canSendMessage: true,
+      trackMessage: () => true,
+      showLoginPrompt: false,
+      setShowLoginPrompt: () => {},
+      resetUsage: () => {},
+    };
   }
   return context;
 };

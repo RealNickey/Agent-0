@@ -10,19 +10,18 @@ const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  const content = (
-    <UsageProvider>
-      {children}
-    </UsageProvider>
-  );
-
+  // When Clerk is configured, use both providers
   if (hasValidClerkKey) {
     return (
       <ClerkProvider>
-        {content}
+        <UsageProvider>
+          {children}
+        </UsageProvider>
       </ClerkProvider>
     );
   }
 
-  return content;
+  // When Clerk is not configured, skip both Clerk and Usage tracking
+  return <>{children}</>;
 }
+

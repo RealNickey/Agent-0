@@ -17,30 +17,6 @@ import {
 import { Button } from "../ui/button";
 import { RiLockLine, RiCheckLine, RiSparklingLine } from "react-icons/ri";
 
-// Check if Clerk is properly configured
-const getClerkKey = () => {
-  if (typeof window === 'undefined') return undefined;
-  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-};
-
-// Safe wrapper that always calls useClerk unconditionally
-function useSafeClerk() {
-  // Always call the hook unconditionally at the top level (Rules of Hooks requirement)
-  const clerkData = useClerk();
-  
-  // Check if Clerk is actually configured
-  const publishableKey = getClerkKey();
-  const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
-  
-  // If Clerk is not configured, return safe defaults instead of the Clerk data
-  if (!hasValidClerkKey) {
-    return { openSignIn: undefined };
-  }
-  
-  // Return Clerk data if configured
-  return clerkData;
-}
-
 interface LoginPromptModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -54,7 +30,7 @@ export default function LoginPromptModal({
   remainingMessages = 0,
   messageLimit = 10,
 }: LoginPromptModalProps) {
-  const { openSignIn } = useSafeClerk();
+  const { openSignIn } = useClerk();
 
   const handleSignIn = () => {
     onOpenChange(false);

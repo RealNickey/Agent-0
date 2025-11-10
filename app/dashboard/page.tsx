@@ -29,7 +29,22 @@ const ConversationBar = dynamic(
     })),
   { ssr: false }
 );
-import { AccountWidget } from "../../src/components/ui/account-widget";
+
+// Only import AccountWidget if Clerk is configured
+const hasClerk =
+  typeof window !== "undefined" &&
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY &&
+  process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY.startsWith("pk_");
+
+const AccountWidget = hasClerk
+  ? dynamic(() =>
+      import("../../src/components/ui/account-widget").then((mod) => ({
+        default: mod.AccountWidget,
+      })),
+    { ssr: false }
+  )
+  : () => null;
+
 import { useLiveAPIContext } from "../../src/contexts/LiveAPIContext";
 
 // Main content area component that can access context

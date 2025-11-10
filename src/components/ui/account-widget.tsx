@@ -5,39 +5,12 @@ import { useClerk } from "@clerk/nextjs";
 import { useUsage } from "../../contexts/UsageContext";
 import cn from "classnames";
 
-// Check if Clerk is properly configured
-const getClerkKey = () => {
-  if (typeof window === 'undefined') return undefined;
-  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-};
-
-// Safe wrapper that always calls useClerk unconditionally
-function useSafeClerk() {
-  // Always call the hook unconditionally at the top level (Rules of Hooks requirement)
-  const clerkData = useClerk();
-  
-  // Check if Clerk is actually configured
-  const publishableKey = getClerkKey();
-  const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
-  
-  // If Clerk is not configured, return safe defaults instead of the Clerk data
-  if (!hasValidClerkKey) {
-    return { openSignIn: undefined };
-  }
-  
-  // Return Clerk data if configured
-  return clerkData;
-}
-
-function useClerkData() {
-  const { openSignIn } = useSafeClerk();
-  return { openSignIn };
-}
-
 export function AccountWidget() {
-  const { openSignIn } = useClerkData();
+  const { openSignIn } = useClerk();
   const { isAnonymous, remainingMessages, messageLimit, usagePercentage } =
     useUsage();
+
+  if (!isAnonymous) return null;
 
   if (!isAnonymous) return null;
 

@@ -8,6 +8,7 @@ import {
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import VoiceSelector from "./VoiceSelector";
 import ResponseModalitySelector from "./ResponseModalitySelector";
+import OrbSelector from "./OrbSelector";
 import { FunctionDeclaration, LiveConnectConfig, Tool } from "@google/genai";
 import {
   Dialog,
@@ -126,6 +127,7 @@ export default function SettingsDialog() {
           <div className="flex gap-4 py-2">
             <ResponseModalitySelector />
             <VoiceSelector />
+            <OrbSelector />
           </div>
 
           <h3 className="text-accent-blue-headers font-bold text-lg mb-3 mt-4">

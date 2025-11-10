@@ -5,7 +5,7 @@ import cn from "classnames";
 import { useRef, useState } from "react";
 import { LiveClientOptions } from "../../src/types";
 import { Toaster } from "../../src/components/ui/sonner";
-const VoiceOrb = dynamic(() => import("../../src/components/ui/voiceOrb"), {
+const VoiceOrb = dynamic(() => import("../../src/components/ui/dynamicVoiceOrb"), {
   ssr: false,
 });
 import SettingsDialog from "../../src/components/settings-dialog/SettingsDialog";

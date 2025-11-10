@@ -5,15 +5,12 @@ import { useClerk } from "@clerk/nextjs";
 import { useUsage } from "../../contexts/UsageContext";
 import cn from "classnames";
 
-function useClerkData() {
-  const { openSignIn } = useClerk();
-  return { openSignIn };
-}
-
 export function AccountWidget() {
-  const { openSignIn } = useClerkData();
+  const { openSignIn } = useClerk();
   const { isAnonymous, remainingMessages, messageLimit, usagePercentage } =
     useUsage();
+
+  if (!isAnonymous) return null;
 
   if (!isAnonymous) return null;
 

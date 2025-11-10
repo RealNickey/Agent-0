@@ -126,7 +126,20 @@ export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
 export const useUsage = () => {
   const context = useContext(UsageContext);
   if (!context) {
-    throw new Error("useUsage must be used within a UsageProvider");
+    // Return safe defaults when UsageProvider is not available (e.g., when Clerk is not configured)
+    return {
+      messageCount: 0,
+      remainingMessages: Infinity,
+      messageLimit: 0,
+      usagePercentage: 0,
+      hasReachedLimit: false,
+      isAnonymous: false,
+      canSendMessage: true,
+      trackMessage: () => true,
+      showLoginPrompt: false,
+      setShowLoginPrompt: () => {},
+      resetUsage: () => {},
+    };
   }
   return context;
 };

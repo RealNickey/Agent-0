@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
-export type OrbType = 'siri' | 'elevenlabs';
+export type OrbType = 'siri' | 'elevenlabs' | 'elevenlabs-official';
 
 export interface OrbColors {
   idle: {

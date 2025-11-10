@@ -6,8 +6,8 @@ import { Button } from "../ui/button";
 export default function OrbColorCustomizer() {
   const { colors, setColors, resetColors, selectedOrb } = useOrbSettings();
 
-  // Only show for ElevenLabs orb
-  if (selectedOrb !== "elevenlabs") {
+  // Show for both ElevenLabs orb variants
+  if (selectedOrb !== "elevenlabs" && selectedOrb !== "elevenlabs-official") {
     return null;
   }
 

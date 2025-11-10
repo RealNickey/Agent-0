@@ -90,12 +90,14 @@ export const LiveAPIProvider: FC<LiveAPIProviderProps> = ({
       value={{ ...liveAPI, toolUIActive, setToolUIActive, canSendMessage }}
     >
       {children}
-      <LoginPromptModal
-        open={showLoginPrompt}
-        onOpenChange={setShowLoginPrompt}
-        remainingMessages={remainingMessages}
-        messageLimit={messageLimit}
-      />
+      {isAnonymous && (
+        <LoginPromptModal
+          open={showLoginPrompt}
+          onOpenChange={setShowLoginPrompt}
+          remainingMessages={remainingMessages}
+          messageLimit={messageLimit}
+        />
+      )}
     </LiveAPIContext.Provider>
   );
 };

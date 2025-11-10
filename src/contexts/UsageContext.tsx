@@ -17,6 +17,24 @@ import {
   getUsagePercentage,
 } from "../lib/usage-tracker";
 
+// Check if Clerk is properly configured
+const publishableKey = typeof window !== 'undefined' 
+  ? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY 
+  : undefined;
+const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+
+// Safe wrapper for useUser hook
+function useSafeUser() {
+  try {
+    if (hasValidClerkKey) {
+      return useUser();
+    }
+  } catch (e) {
+    // Clerk not available
+  }
+  return { isSignedIn: false, user: null, isLoaded: true };
+}
+
 interface UsageContextValue {
   messageCount: number;
   remainingMessages: number;
@@ -38,7 +56,7 @@ export interface UsageProviderProps {
 }
 
 export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
-  const { isSignedIn, user } = useUser();
+  const { isSignedIn, user } = useSafeUser();
   const [messageCount, setMessageCount] = useState(0);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 

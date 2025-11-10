@@ -17,6 +17,23 @@ import {
 import { Button } from "../ui/button";
 import { RiLockLine, RiCheckLine, RiSparklingLine } from "react-icons/ri";
 
+// Check if Clerk is properly configured
+const publishableKey = typeof window !== 'undefined' 
+  ? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY 
+  : undefined;
+const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+
+function useSafeClerk() {
+  try {
+    if (hasValidClerkKey) {
+      return useClerk();
+    }
+  } catch (e) {
+    // Clerk not available
+  }
+  return { openSignIn: undefined };
+}
+
 interface LoginPromptModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -30,7 +47,7 @@ export default function LoginPromptModal({
   remainingMessages = 0,
   messageLimit = 10,
 }: LoginPromptModalProps) {
-  const { openSignIn } = useClerk();
+  const { openSignIn } = useSafeClerk();
 
   const handleSignIn = () => {
     onOpenChange(false);

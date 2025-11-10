@@ -5,8 +5,25 @@ import { useClerk } from "@clerk/nextjs";
 import { useUsage } from "../../contexts/UsageContext";
 import cn from "classnames";
 
+// Check if Clerk is properly configured
+const publishableKey = typeof window !== 'undefined' 
+  ? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY 
+  : undefined;
+const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+
+function useSafeClerk() {
+  try {
+    if (hasValidClerkKey) {
+      return useClerk();
+    }
+  } catch (e) {
+    // Clerk not available
+  }
+  return { openSignIn: undefined };
+}
+
 function useClerkData() {
-  const { openSignIn } = useClerk();
+  const { openSignIn } = useSafeClerk();
   return { openSignIn };
 }
 

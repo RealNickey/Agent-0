@@ -4,8 +4,7 @@ import { useOrbSettings, OrbType } from "../../lib/orb-settings";
 
 const orbOptions = [
   { value: "siri" as OrbType, label: "Siri Orb" },
-  { value: "elevenlabs" as OrbType, label: "ElevenLabs Orb (Custom)" },
-  { value: "elevenlabs-official" as OrbType, label: "ElevenLabs Orb (Official)" },
+  { value: "elevenlabs-official" as OrbType, label: "ElevenLabs Orb" },
 ];
 
 export default function OrbSelector() {

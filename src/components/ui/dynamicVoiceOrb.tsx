@@ -7,10 +7,6 @@ const SiriOrb = dynamic(() => import("./voiceOrb"), {
   ssr: false,
 });
 
-const ElevenLabsOrb = dynamic(() => import("./elevenLabsOrb"), {
-  ssr: false,
-});
-
 const ElevenLabsOfficialOrb = dynamic(() => import("./elevenLabsOfficialOrb"), {
   ssr: false,
 });
@@ -24,10 +20,6 @@ const DynamicVoiceOrb: React.FC<DynamicVoiceOrbProps> = ({ size = "256px" }) => 
 
   if (selectedOrb === "elevenlabs-official") {
     return <ElevenLabsOfficialOrb size={size} />;
-  }
-
-  if (selectedOrb === "elevenlabs") {
-    return <ElevenLabsOrb size={size} />;
   }
 
   return <SiriOrb size={size} />;

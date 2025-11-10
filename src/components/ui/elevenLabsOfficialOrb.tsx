@@ -1,9 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
 import { Orb, AgentState } from "./orb";
-import { useOrbSettings } from "../../lib/orb-settings";
 
 type ElevenLabsOfficialOrbProps = {
   size?: string;
@@ -13,7 +12,6 @@ const ElevenLabsOfficialOrb: React.FC<ElevenLabsOfficialOrbProps> = ({
   size = "256px",
 }) => {
   const { connected, connect, disconnect, volume } = useLiveAPIContext();
-  const { colors } = useOrbSettings();
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Detect speaking state based on volume threshold
@@ -46,14 +44,14 @@ const ElevenLabsOfficialOrb: React.FC<ElevenLabsOfficialOrbProps> = ({
     return "listening";
   };
 
-  // Use custom colors from settings - convert to the orb's color format
+  // Use default ElevenLabs colors - beautiful gradient scheme
   const orbColors: [string, string] = [
-    isSpeaking ? colors.speaking.primary : 
-    connected ? colors.listening.primary : 
-    colors.idle.primary,
-    isSpeaking ? colors.speaking.secondary :
-    connected ? colors.listening.secondary :
-    colors.idle.secondary
+    isSpeaking ? "#A855F7" : // Purple for speaking
+    connected ? "#3B82F6" :   // Blue for listening
+    "#6B7280",                // Gray for idle
+    isSpeaking ? "#EC4899" :  // Pink for speaking
+    connected ? "#06B6D4" :   // Cyan for listening
+    "#9CA3AF"                 // Light gray for idle
   ];
 
   return (

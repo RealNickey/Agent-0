@@ -3,6 +3,7 @@
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useCallback } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
+import { useOrbSettings } from "../../lib/orb-settings";
 
 // --- ElevenLabs-style Voice Orb Component ---
 interface ElevenLabsOrbProps {
@@ -23,6 +24,7 @@ const ElevenLabsOrb: React.FC<ElevenLabsOrbProps> = ({
   isIdle = true,
 }) => {
   const sizeValue = parseInt(size.replace("px", ""), 10);
+  const { colors: customColors } = useOrbSettings();
   
   // Determine the current state for styling
   const getOrbState = () => {
@@ -46,28 +48,21 @@ const ElevenLabsOrb: React.FC<ElevenLabsOrbProps> = ({
 
   const scale = getScale();
 
-  // Color scheme based on state
+  // Color scheme based on state using custom colors
   const getColors = () => {
-    switch (orbState) {
-      case 'speaking':
-        return {
-          primary: '#A855F7', // Purple
-          secondary: '#EC4899', // Pink
-          glow: 'rgba(168, 85, 247, 0.5)',
-        };
-      case 'listening':
-        return {
-          primary: '#3B82F6', // Blue
-          secondary: '#06B6D4', // Cyan
-          glow: 'rgba(59, 130, 246, 0.5)',
-        };
-      default:
-        return {
-          primary: '#6B7280', // Gray
-          secondary: '#9CA3AF', // Light gray
-          glow: 'rgba(107, 114, 128, 0.3)',
-        };
-    }
+    const stateColors = customColors[orbState];
+    const hexToRgba = (hex: string, alpha: number) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    };
+    
+    return {
+      primary: stateColors.primary,
+      secondary: stateColors.secondary,
+      glow: hexToRgba(stateColors.primary, orbState === 'idle' ? 0.3 : 0.5),
+    };
   };
 
   const colors = getColors();

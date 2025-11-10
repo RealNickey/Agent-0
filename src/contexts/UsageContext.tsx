@@ -18,21 +18,27 @@ import {
 } from "../lib/usage-tracker";
 
 // Check if Clerk is properly configured
-const publishableKey = typeof window !== 'undefined' 
-  ? process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY 
-  : undefined;
-const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+const getClerkKey = () => {
+  if (typeof window === 'undefined') return undefined;
+  return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+};
 
-// Safe wrapper for useUser hook
+// Safe wrapper that always calls useUser unconditionally
 function useSafeUser() {
-  try {
-    if (hasValidClerkKey) {
-      return useUser();
-    }
-  } catch (e) {
-    // Clerk not available
+  // Always call the hook unconditionally at the top level (Rules of Hooks requirement)
+  const clerkUserData = useUser();
+  
+  // Check if Clerk is actually configured
+  const publishableKey = getClerkKey();
+  const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+  
+  // If Clerk is not configured, return safe defaults instead of the Clerk data
+  if (!hasValidClerkKey) {
+    return { isSignedIn: false, user: null, isLoaded: true };
   }
-  return { isSignedIn: false, user: null, isLoaded: true };
+  
+  // Return Clerk data if configured
+  return clerkUserData;
 }
 
 interface UsageContextValue {

@@ -5,7 +5,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useLiveAPIContext } from "../../contexts/LiveAPIContext";
-import { toolToasts } from "../../lib/toast";
+import { toolToasts, showToast } from "../../lib/toast";
 import {
   FunctionDeclaration,
   LiveServerToolCall,
@@ -13,6 +13,8 @@ import {
   Type,
 } from "@google/genai";
 import { motion } from "framer-motion";
+import { FileUpload } from "../../components/ui/file-upload";
+import { PDFDocument } from "pdf-lib";
 
 // Tool declarations for movie-related functions
 const movieSearchDeclaration: FunctionDeclaration = {
@@ -77,6 +79,23 @@ const altairRenderDeclaration: FunctionDeclaration = {
       },
     },
     required: ["json_graph"],
+  },
+};
+
+// PDF Compressor declaration
+const pdfCompressDeclaration: FunctionDeclaration = {
+  name: "compress_pdf",
+  description: "Open a file upload interface for the user to upload a PDF file for compression. Call this when the user asks to compress a PDF or needs help with PDF compression.",
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      open_upload: {
+        type: Type.BOOLEAN,
+        description: "Set to true to open the file upload interface",
+        default: true,
+      },
+    },
+    required: [],
   },
 };
 
@@ -176,9 +195,80 @@ export function TMDbTool() {
     movieDetails?: any;
     reviews?: any[]; // retained in state shape but no longer populated (simplification)
     altairSpec?: string;
+    showPdfUpload?: boolean;
   }>({});
+  const [isCompressing, setIsCompressing] = useState(false);
+  const [compressionStatus, setCompressionStatus] = useState<string>("");
   const { client, setConfig, setModel, setToolUIActive, toolUIActive } =
     useLiveAPIContext();
+
+  // Compress PDF using pdf-lib
+  const compressPDF = async (file: File): Promise<void> => {
+    setIsCompressing(true);
+    setCompressionStatus("Reading PDF...");
+    
+    try {
+      // Read the uploaded PDF
+      const arrayBuffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(arrayBuffer);
+      
+      setCompressionStatus("Compressing PDF...");
+      
+      // Save with compression options
+      const compressedPdfBytes = await pdfDoc.save({
+        useObjectStreams: true,
+        addDefaultPage: false,
+      });
+      
+      const originalSize = file.size;
+      const compressedSize = compressedPdfBytes.length;
+      const savings = ((originalSize - compressedSize) / originalSize * 100).toFixed(1);
+      
+      setCompressionStatus(`Compressed! Saved ${savings}% (${(originalSize / 1024 / 1024).toFixed(2)}MB → ${(compressedSize / 1024 / 1024).toFixed(2)}MB)`);
+      
+      // Create download link
+      const blob = new Blob([compressedPdfBytes as BlobPart], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = file.name.replace(".pdf", "_compressed.pdf");
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      showToast.success("PDF Compressor", `PDF compressed successfully! Saved ${savings}%`);
+      
+      // Clear upload after a delay
+      setTimeout(() => {
+        setDisplayData({});
+        setCompressionStatus("");
+        setToolUIActive(false);
+      }, 3000);
+      
+    } catch (error) {
+      console.error("Compression error:", error);
+      const errorMsg = error instanceof Error ? error.message : "Unknown error occurred";
+      setCompressionStatus(`Error: ${errorMsg}`);
+      toolToasts.apiError("PDF Compressor", errorMsg);
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  const handleFileChange = (files: File[]) => {
+    if (files.length > 0) {
+      const file = files[0];
+      
+      // Validate that it's a PDF
+      if (file.type !== "application/pdf") {
+        toolToasts.apiError("PDF Compressor", "Please upload a PDF file");
+        return;
+      }
+      
+      compressPDF(file);
+    }
+  };
 
   useEffect(() => {
     setModel("models/gemini-live-2.5-flash-preview");
@@ -190,15 +280,17 @@ export function TMDbTool() {
       systemInstruction: {
         parts: [
           {
-            text: `You are a helpful general assistant with extra movie and charting tools.
+            text: `You are a helpful general assistant with extra movie, charting, and PDF compression tools.
 
 Available tools:
 - search_movies: find movies when the user mentions or asks about a film.
 - get_movie_details: fetch basic info (title, overview, poster, runtime/year) for a specific movie id when clarifying or answering questions.
 - render_altair: render Altair/Vega-Lite charts for ANY data visualization request. Use this whenever the user asks for a chart/graph/visualization, or when a chart would clarify an answer. Provide a JSON STRING (stringified spec) in 'json_graph'.
+- compress_pdf: open a file upload interface for PDF compression. Use this when the user asks to compress a PDF, needs help with PDF compression, or wants to reduce PDF file size.
 
 Guidelines:
 - Charts are not limited to movies. If the user asks for a chart (e.g., "use the graph tool", "plot", "visualize", "chart", "graph"), call render_altair with a sensible, minimal spec based on the described data. If needed, synthesize a tiny example dataset to illustrate the concept, and state that it's illustrative.
+- For PDF compression requests, call compress_pdf to open the upload interface and guide the user to upload their PDF file.
 - Do NOT attempt recommendations, reviews, or top‑rated lists (those capabilities are disabled).
 - Keep answers concise and focused. When combining narration with charts, keep the narrative brief and let the visualization carry the detail.
 `,
@@ -212,6 +304,7 @@ Guidelines:
             movieSearchDeclaration,
             movieDetailsDeclaration,
             altairRenderDeclaration,
+            pdfCompressDeclaration,
           ],
         },
       ],
@@ -284,6 +377,18 @@ Guidelines:
                 error: `Invalid JSON spec: ${e?.message}`,
               };
             }
+            break;
+
+          case "compress_pdf":
+            // Clear previous data and open PDF upload interface
+            setDisplayData({});
+            setDisplayData({ showPdfUpload: true });
+            setCompressionStatus("");
+            result = {
+              success: true,
+              data: { message: "File upload interface opened. Waiting for user to upload a PDF file." },
+            };
+            showToast.success("PDF Compressor", "Please upload a PDF file to compress");
             break;
 
           default:
@@ -439,12 +544,57 @@ Guidelines:
                   </motion.div>
                 )}
 
+                {/* PDF Upload and Compression UI */}
+                {displayData.showPdfUpload && (
+                  <motion.div
+                    className="max-w-2xl w-full mx-auto"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <div className="bg-card border border-border rounded-2xl shadow-lg overflow-hidden p-8">
+                      <h2 className="text-2xl font-bold text-foreground mb-4 text-center">
+                        PDF Compressor
+                      </h2>
+                      <p className="text-muted-foreground mb-6 text-center">
+                        Upload a PDF file to compress it and reduce its size
+                      </p>
+                      
+                      <FileUpload onChange={handleFileChange} />
+                      
+                      {isCompressing && (
+                        <motion.div
+                          className="mt-6 text-center"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            <p className="text-foreground">{compressionStatus}</p>
+                          </div>
+                        </motion.div>
+                      )}
+                      
+                      {compressionStatus && !isCompressing && (
+                        <motion.div
+                          className="mt-6 text-center"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                        >
+                          <p className="text-foreground font-medium">{compressionStatus}</p>
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
                 {/* Show message if no content */}
                 {!displayData.movies?.length &&
                   !displayData.movieDetails &&
-                  !displayData.altairSpec && (
+                  !displayData.altairSpec &&
+                  !displayData.showPdfUpload && (
                     <div className="text-center text-muted-foreground py-8">
-                      No tool results yet. Try asking for movies or charts!
+                      No tool results yet. Try asking for movies, charts, or PDF compression!
                     </div>
                   )}
               </div>

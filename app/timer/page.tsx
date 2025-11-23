@@ -1,40 +1,34 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import ArcCountdown from "@/components/arc-countdown"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import ArcCountdown from "@/components/arc-countdown";
+import { Button } from "@/components/ui/button";
 
-type Mode = "countdown" | "stopwatch"
+type Mode = "countdown" | "stopwatch";
 
 export default function TimerPage() {
-  const [mode, setMode] = useState<Mode>("countdown")
-  const [key, setKey] = useState(0) // Force remount on mode change
-  const [isPaused, setIsPaused] = useState(true) // Start paused
-  const [isStarted, setIsStarted] = useState(false)
-
-  const handleStart = () => {
-    setIsStarted(true)
-    setIsPaused(false)
-  }
+  const [mode, setMode] = useState<Mode>("countdown");
+  const [key, setKey] = useState(0); // Force remount on mode change
+  const [isPaused, setIsPaused] = useState(false); // Auto-start immediately
 
   const handleReset = () => {
-    setKey((prev) => prev + 1)
-    setIsPaused(true)
-    setIsStarted(false)
-  }
+    setKey((prev) => prev + 1);
+    setIsPaused(false); // Auto-start on reset
+  };
 
   const handleModeChange = (newMode: Mode) => {
-    setMode(newMode)
-    handleReset()
-  }
+    setMode(newMode);
+    setKey((prev) => prev + 1);
+    setIsPaused(false); // Auto-start on mode change
+  };
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-white">
-      <div className="flex flex-col items-center gap-8">
-        <h1 className="text-4xl font-bold text-gray-900">Arc Countdown Timer</h1>
-        
+      <div className="flex flex-col items-center gap-6">
+        <h1 className="text-4xl font-bold text-gray-900">Arc Timer</h1>
+
         {/* Mode Selection */}
-        <div className="flex gap-4">
+        <div className="flex gap-3">
           <Button
             onClick={() => handleModeChange("countdown")}
             variant={mode === "countdown" ? "default" : "outline"}
@@ -52,53 +46,35 @@ export default function TimerPage() {
         </div>
 
         {/* Arc Countdown Component */}
-        <div className="my-4">
-          <ArcCountdown 
-            key={key}
-            initialSeconds={mode === "countdown" ? 140 : 0} 
-            radius={160}
-            mode={mode}
-            isPaused={isPaused}
-          />
-        </div>
+        <ArcCountdown
+          key={key}
+          initialSeconds={mode === "countdown" ? 140 : 0}
+          radius={160}
+          mode={mode}
+          isPaused={isPaused}
+        />
 
         {/* Control Buttons */}
-        <div className="flex gap-4">
-          {!isStarted ? (
-            <Button
-              onClick={handleStart}
-              variant="default"
-              size="lg"
-              className="bg-green-600 hover:bg-green-700"
-            >
-              Start
-            </Button>
-          ) : (
-            <>
-              <Button
-                onClick={() => setIsPaused(!isPaused)}
-                variant="secondary"
-                size="lg"
-              >
-                {isPaused ? "Resume" : "Pause"}
-              </Button>
-              <Button
-                onClick={handleReset}
-                variant="destructive"
-                size="lg"
-              >
-                Stop
-              </Button>
-            </>
-          )}
+        <div className="flex gap-3">
+          <Button
+            onClick={() => setIsPaused(!isPaused)}
+            variant="secondary"
+            size="lg"
+          >
+            {isPaused ? "Resume" : "Pause"}
+          </Button>
+          <Button onClick={handleReset} variant="destructive" size="lg">
+            Reset
+          </Button>
         </div>
 
         <p className="text-sm text-gray-500">
-          Current mode: <span className="font-semibold">{mode === "countdown" ? "Timer (Countdown)" : "Stopwatch (Count Up)"}</span>
-          {isStarted && isPaused && <span className="ml-2 text-orange-500">• Paused</span>}
-          {!isStarted && <span className="ml-2 text-blue-500">• Ready to start</span>}
+          <span className="font-semibold">
+            {mode === "countdown" ? "Timer" : "Stopwatch"}
+          </span>
+          {isPaused && <span className="ml-2 text-orange-500">• Paused</span>}
         </p>
       </div>
     </div>
-  )
+  );
 }

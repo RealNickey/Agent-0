@@ -347,6 +347,8 @@ Guidelines:
 - Do NOT attempt recommendations, reviews, or top‑rated lists (those capabilities are disabled).
 - Keep answers concise and focused. When combining narration with charts, keep the narrative brief and let the visualization carry the detail.
 - When setting a timer, convert user-friendly durations (like "5 minutes") to seconds (300).
+- Before using any tool, briefly acknowledge what you're doing (e.g., 'Let me search for that', 'I'll look that up for you').
+- Some tools are asynchronous. If a tool returns 'Processing in background', continue the conversation naturally (e.g. 'I'm looking that up...'). You will receive the results in a subsequent message. Do not make up results.
 `,
           },
         ],
@@ -535,17 +537,25 @@ Guidelines:
             // Clear previous data before new search
             setDisplayContent("movies");
             setDisplayData({});
-            result = await makeAPICall("/api/movies/search", {
+            
+            // Async handling: Return immediate processing status
+            result = { success: true, data: { status: "Processing in background. Results will be sent shortly." } };
+            
+            // Trigger async fetch
+            makeAPICall("/api/movies/search", {
               q: query,
               page,
               year,
+            }).then((apiResult) => {
+              if (apiResult.success && apiResult.data?.items) {
+                setDisplayData({ movies: apiResult.data.items });
+                toolToasts.searchSuccess(apiResult.data.items.length);
+                client.send([{ text: `[Tool Result: search_movies] Found ${apiResult.data.items.length} movies: ${JSON.stringify(apiResult.data.items.slice(0, 5))}` }]);
+              } else {
+                toolToasts.searchError(apiResult.error);
+                client.send([{ text: `[Tool Result: search_movies] Error: ${apiResult.error}` }]);
+              }
             });
-            if (result.success && result.data?.items) {
-              setDisplayData({ movies: result.data.items });
-              toolToasts.searchSuccess(result.data.items.length);
-            } else {
-              toolToasts.searchError(result.error);
-            }
             break;
 
           case "get_movie_details":
@@ -553,13 +563,19 @@ Guidelines:
             setDisplayContent("movie_details");
             setDisplayData({});
             const { movie_id } = fc.args as unknown as GetMovieDetailsArgs;
-            const detailsResult = await makeAPICall(`/api/movies/${movie_id}`);
-            if (detailsResult.success) {
-              setDisplayData({ movieDetails: detailsResult.data });
-            } else {
-              toolToasts.apiError("TMDb", detailsResult.error);
-            }
-            result = detailsResult;
+            
+            // Async handling
+            result = { success: true, data: { status: "Processing in background. Results will be sent shortly." } };
+            
+            makeAPICall(`/api/movies/${movie_id}`).then((detailsResult) => {
+              if (detailsResult.success) {
+                setDisplayData({ movieDetails: detailsResult.data });
+                client.send([{ text: `[Tool Result: get_movie_details] Details: ${JSON.stringify(detailsResult.data)}` }]);
+              } else {
+                toolToasts.apiError("TMDb", detailsResult.error);
+                client.send([{ text: `[Tool Result: get_movie_details] Error: ${detailsResult.error}` }]);
+              }
+            });
             break;
 
           case "render_altair":
@@ -597,11 +613,9 @@ Guidelines:
       }
 
       // Send tool responses back to the AI
-      setTimeout(() => {
-        client.sendToolResponse({
-          functionResponses: responses,
-        });
-      }, 100);
+      client.sendToolResponse({
+        functionResponses: responses,
+      });
     };
 
     const onClose = () => {

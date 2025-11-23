@@ -25,14 +25,43 @@ const nextConfig = {
     }
 
     // Prefer browser build of vega-canvas; some deps reference the node variant explicitly
+    // Resolve the browser build path from the package.json's "exports" so we
+    // can point aliases at a concrete file path (avoids using unsupported
+    // require.resolve({ conditions: [...] }) in some Node environments).
+    const path = require("path");
+    let vegaBrowserEntry;
+    try {
+      const vegaPkg = require("vega-canvas/package.json");
+      const pkgDir = path.dirname(require.resolve("vega-canvas/package.json"));
+      // prefer exports.default -> fallback to build/vega-canvas.browser.js
+      const exported = vegaPkg.exports && vegaPkg.exports.default;
+      vegaBrowserEntry = path.join(pkgDir, (exported || "./build/vega-canvas.browser.js").replace(/^\.\//, ""));
+    } catch (e) {
+      // Fallback to the conventional file path
+      vegaBrowserEntry = path.join(process.cwd(), "node_modules", "vega-canvas", "build", "vega-canvas.browser.js");
+    }
     config.resolve.alias = {
       ...(config.resolve.alias || {}),
-      "vega-canvas/build/vega-canvas.node.module.js": require.resolve(
-        "vega-canvas/build/vega-canvas.browser.module.js"
-      ),
-      "vega-canvas": require.resolve(
-        "vega-canvas/build/vega-canvas.browser.module.js"
-      ),
+      // The vega-canvas package exposes ./build/vega-canvas.browser.js via
+      // its "exports" field. The previous alias pointed at
+      // build/vega-canvas.browser.module.js which isn't exported and causes
+      // a package subpath error during Next.js builds. Point the aliases at
+      // the exported browser build instead to be compatible with the package
+      // exports map.
+      // Map any references to vega-canvas directly to the package's exported
+      // entry so webpack will resolve the correct browser build through the
+      // package's "exports" map instead of referencing non-exported
+      // subpaths. Some upstream packages still import the node build
+      // (build/vega-canvas.node.js) explicitly — alias that as well so the
+      // browser build is used during client bundling and we avoid warnings
+      // about top-level await / missing native 'canvas' bindings.
+      // Resolve vega-canvas for the browser condition so we get the
+      // browser-optimized build instead of the node entry which expects
+      // native 'canvas' bindings. require.resolve supports the 'conditions'
+      // option which causes the package's exports to be resolved with the
+      // 'browser' condition where available.
+      "vega-canvas/build/vega-canvas.node.js": vegaBrowserEntry,
+      "vega-canvas": vegaBrowserEntry,
     };
 
     // Handle worklet files

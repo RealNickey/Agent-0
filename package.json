@@ -42,7 +42,7 @@
     "use-stick-to-bottom": "^1.1.1",
     "vega": "^5.33.0",
     "vega-embed": "^6.29.0",
-    "vega-lite": "^5.22.0",
+    "vega-lite": "^6.4.1",
     "web-vitals": "^2.1.4",
     "zod": "^3.25.76",
     "zustand": "^5.0.1"

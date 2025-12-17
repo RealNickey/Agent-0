@@ -1,26 +1,25 @@
+"use client";
+
 /**
- * Usage Context
+ * Usage Context with Clerk Integration
  * 
- * Provides usage tracking and limit enforcement for anonymous users.
+ * Provides usage tracking with Clerk authentication.
  * Authenticated users have unlimited access.
  * 
- * When Clerk is not configured, this context still works but treats all users as anonymous.
+ * This provider should only be used when Clerk is properly configured.
  */
 
 import { createContext, FC, ReactNode, useContext, useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
 import {
   getUsageData,
   incrementMessageCount,
-  hasReachedLimit,
+  hasReachedLimit as hasReachedLimitFn,
   getRemainingMessages,
   resetUsageData,
   getMessageLimit,
   getUsagePercentage,
 } from "../lib/usage-tracker";
-import { hasValidClerkKey } from "../lib/clerk-config";
-
-// Re-export for backward compatibility
-export { hasValidClerkKey } from "../lib/clerk-config";
 
 interface UsageContextValue {
   messageCount: number;
@@ -30,7 +29,7 @@ interface UsageContextValue {
   hasReachedLimit: boolean;
   isAnonymous: boolean;
   canSendMessage: boolean;
-  trackMessage: () => boolean; // Returns false if limit reached
+  trackMessage: () => boolean;
   showLoginPrompt: boolean;
   setShowLoginPrompt: (show: boolean) => void;
   resetUsage: () => void;
@@ -43,28 +42,40 @@ export interface UsageProviderProps {
   children: ReactNode;
 }
 
-// Provider that works without Clerk authentication
-export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
+// Provider that uses Clerk for authentication
+export const UsageProviderWithClerk: FC<UsageProviderProps> = ({ children }) => {
+  const { isSignedIn } = useUser();
   const [messageCount, setMessageCount] = useState(0);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  // Without Clerk integration in this provider, user is always anonymous
-  const isAnonymous = true;
+  // User is anonymous if not signed in
+  const isAnonymous = !isSignedIn;
 
   // Load initial usage data
   useEffect(() => {
-    const data = getUsageData();
-    setMessageCount(data.messageCount);
-  }, []);
+    if (isAnonymous) {
+      const data = getUsageData();
+      setMessageCount(data.messageCount);
+    } else {
+      // Authenticated users: reset any stored anonymous usage
+      resetUsageData();
+      setMessageCount(0);
+    }
+  }, [isAnonymous]);
 
   // Calculate derived values
-  const remainingMessages = getRemainingMessages();
+  const remainingMessages = isAnonymous ? getRemainingMessages() : Infinity;
   const messageLimit = getMessageLimit();
-  const usagePercentage = getUsagePercentage();
-  const limitReached = hasReachedLimit();
+  const usagePercentage = isAnonymous ? getUsagePercentage() : 0;
+  const limitReached = isAnonymous && hasReachedLimitFn();
   const canSendMessage = !limitReached;
 
   const trackMessage = (): boolean => {
+    // Authenticated users have unlimited access
+    if (!isAnonymous) {
+      return true;
+    }
+
     if (limitReached) {
       setShowLoginPrompt(true);
       return false;
@@ -96,7 +107,7 @@ export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
     showLoginPrompt,
     setShowLoginPrompt,
     resetUsage,
-    clerkAvailable: hasValidClerkKey,
+    clerkAvailable: true,
   };
 
   return (
@@ -106,24 +117,10 @@ export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
   );
 };
 
-export const useUsage = () => {
+export const useUsageWithClerk = () => {
   const context = useContext(UsageContext);
   if (!context) {
-    // Return safe defaults when used outside provider (e.g., during SSR/build)
-    return {
-      messageCount: 0,
-      remainingMessages: Infinity,
-      messageLimit: 10,
-      usagePercentage: 0,
-      hasReachedLimit: false,
-      isAnonymous: true,
-      canSendMessage: true,
-      trackMessage: () => true,
-      showLoginPrompt: false,
-      setShowLoginPrompt: () => {},
-      resetUsage: () => {},
-      clerkAvailable: false,
-    };
+    throw new Error("useUsageWithClerk must be used within a UsageProviderWithClerk");
   }
   return context;
 };

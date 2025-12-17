@@ -1,22 +1,19 @@
 "use client";
 
 import { ClerkProvider } from "@clerk/nextjs";
-import { ThemeProvider } from "next-themes";
 import React from "react";
 import { UsageProvider } from "../src/contexts/UsageContext";
-
-// Only use Clerk if properly configured
-const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-const hasValidClerkKey = publishableKey && publishableKey.startsWith('pk_');
+import { UsageProviderWithClerk } from "../src/contexts/UsageContextWithClerk";
+import { hasValidClerkKey } from "../src/lib/clerk-config";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
-  // Conditionally wrap with ClerkProvider only if Clerk is configured
+  // Conditionally wrap with ClerkProvider and use appropriate UsageProvider
   if (hasValidClerkKey) {
     return (
       <ClerkProvider>
-        <UsageProvider>
+        <UsageProviderWithClerk>
           {children}
-        </UsageProvider>
+        </UsageProviderWithClerk>
       </ClerkProvider>
     );
   }

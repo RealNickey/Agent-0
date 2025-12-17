@@ -1,11 +1,7 @@
 "use client";
 
-import { RiSparklingLine } from "react-icons/ri";
-import { useUsage, hasValidClerkKey } from "../../contexts/UsageContext";
-import cn from "classnames";
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { RiLogoutBoxRLine, RiUserSettingsLine } from "react-icons/ri";
+import { useUsage } from "../../contexts/UsageContext";
+import { hasValidClerkKey } from "../../lib/clerk-config";
 import dynamic from "next/dynamic";
 
 // Only load Clerk-dependent component when Clerk is configured

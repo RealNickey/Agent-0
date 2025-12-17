@@ -114,8 +114,12 @@ export type MovieDetail = z.infer<typeof MovieDetailSchema>;
 export type Credits = z.infer<typeof CreditsSchema>;
 // (Reviews & recommendations removed for simplified integration)
 
-// Axios client with auth via env
-function createClient(): AxiosInstance {
+// Axios client with auth via env - using lazy initialization to avoid build-time errors
+let _client: AxiosInstance | null = null;
+
+function getClient(): AxiosInstance {
+  if (_client) return _client;
+
   const token = process.env.TMDB_ACCESS_TOKEN; // TMDb v4 token (recommended)
   const apiKey = process.env.TMDB_API_KEY; // TMDb v3 API key (fallback)
 
@@ -170,10 +174,9 @@ function createClient(): AxiosInstance {
     }
   );
 
-  return instance;
+  _client = instance;
+  return _client;
 }
-
-const client = createClient();
 
 // Shared options for locale/region and paging
 type LocaleOpts = {
@@ -192,7 +195,7 @@ export async function searchMovies(options: {
   language?: string;
   region?: string;
 }): Promise<z.infer<typeof PaginatedMoviesSchema>> {
-  const { data } = await client.get("/search/movie", {
+  const { data } = await getClient().get("/search/movie", {
     params: {
       query: options.query,
       page: options.page ?? 1,
@@ -210,7 +213,7 @@ export async function getMovieDetails(
   movieId: number,
   opts: LocaleOpts & { append_to_response?: string } = {}
 ): Promise<MovieDetail> {
-  const { data } = await client.get(`/movie/${movieId}`, {
+  const { data } = await getClient().get(`/movie/${movieId}`, {
     params: { ...opts },
   });
   return MovieDetailSchema.parse(data);
@@ -246,7 +249,7 @@ export function toMovieCard(m: MovieSummary): MovieCard {
 // Lightweight health check for env wiring (optional)
 export async function pingTmdb(): Promise<boolean> {
   try {
-    await client.get("/configuration");
+    await getClient().get("/configuration");
     return true;
   } catch {
     return false;

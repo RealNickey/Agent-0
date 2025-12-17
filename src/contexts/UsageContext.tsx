@@ -3,10 +3,11 @@
  * 
  * Provides usage tracking and limit enforcement for anonymous users.
  * Authenticated users have unlimited access.
+ * 
+ * When Clerk is not configured, this context still works but treats all users as anonymous.
  */
 
 import { createContext, FC, ReactNode, useContext, useEffect, useState } from "react";
-import { useUser } from "@clerk/nextjs";
 import {
   getUsageData,
   incrementMessageCount,
@@ -16,6 +17,10 @@ import {
   getMessageLimit,
   getUsagePercentage,
 } from "../lib/usage-tracker";
+
+// Check if Clerk is properly configured at module level
+const publishableKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+export const hasValidClerkKey = typeof publishableKey === 'string' && publishableKey.startsWith('pk_');
 
 interface UsageContextValue {
   messageCount: number;
@@ -29,6 +34,7 @@ interface UsageContextValue {
   showLoginPrompt: boolean;
   setShowLoginPrompt: (show: boolean) => void;
   resetUsage: () => void;
+  clerkAvailable: boolean;
 }
 
 const UsageContext = createContext<UsageContextValue | undefined>(undefined);
@@ -37,65 +43,41 @@ export interface UsageProviderProps {
   children: ReactNode;
 }
 
+// Provider that works without Clerk authentication
 export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
-  const { isSignedIn, user } = useUser();
   const [messageCount, setMessageCount] = useState(0);
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  // Check if user is anonymous
-  const isAnonymous = !isSignedIn;
+  // Without Clerk integration in this provider, user is always anonymous
+  const isAnonymous = true;
 
   // Load initial usage data
   useEffect(() => {
-    if (isAnonymous) {
-      const data = getUsageData();
-      setMessageCount(data.messageCount);
-    } else {
-      // Authenticated users: reset any stored anonymous usage
-      resetUsageData();
-      setMessageCount(0);
-    }
-  }, [isAnonymous]);
+    const data = getUsageData();
+    setMessageCount(data.messageCount);
+  }, []);
 
   // Calculate derived values
-  const remainingMessages = isAnonymous ? getRemainingMessages() : Infinity;
+  const remainingMessages = getRemainingMessages();
   const messageLimit = getMessageLimit();
-  const usagePercentage = isAnonymous ? getUsagePercentage() : 0;
-  const limitReached = isAnonymous && hasReachedLimit();
+  const usagePercentage = getUsagePercentage();
+  const limitReached = hasReachedLimit();
   const canSendMessage = !limitReached;
 
-  /**
-   * Track a message sent by the user
-   * Returns false if the limit has been reached
-   */
   const trackMessage = (): boolean => {
-    // Authenticated users have unlimited access
-    if (!isAnonymous) {
-      return true;
-    }
-
-    // Check if already at limit
     if (limitReached) {
       setShowLoginPrompt(true);
       return false;
     }
-
-    // Increment count
     const newCount = incrementMessageCount();
     setMessageCount(newCount);
-
-    // Check if we just hit the limit
     if (newCount >= messageLimit) {
       setShowLoginPrompt(true);
       return false;
     }
-
     return true;
   };
 
-  /**
-   * Reset usage data (typically called after login)
-   */
   const resetUsage = () => {
     resetUsageData();
     setMessageCount(0);
@@ -114,6 +96,7 @@ export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
     showLoginPrompt,
     setShowLoginPrompt,
     resetUsage,
+    clerkAvailable: hasValidClerkKey,
   };
 
   return (
@@ -126,7 +109,21 @@ export const UsageProvider: FC<UsageProviderProps> = ({ children }) => {
 export const useUsage = () => {
   const context = useContext(UsageContext);
   if (!context) {
-    throw new Error("useUsage must be used within a UsageProvider");
+    // Return safe defaults when used outside provider (e.g., during SSR/build)
+    return {
+      messageCount: 0,
+      remainingMessages: Infinity,
+      messageLimit: 10,
+      usagePercentage: 0,
+      hasReachedLimit: false,
+      isAnonymous: true,
+      canSendMessage: true,
+      trackMessage: () => true,
+      showLoginPrompt: false,
+      setShowLoginPrompt: () => {},
+      resetUsage: () => {},
+      clerkAvailable: false,
+    };
   }
   return context;
 };
